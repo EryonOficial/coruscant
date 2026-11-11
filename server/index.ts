@@ -1,5 +1,5 @@
 // Servidor do Habblaud: observa as sessões abertas do Claude Code (todas as contas),
-// mantém o modelo do escritório e transmite via SSE. Sem dependências de runtime.
+// mantém o modelo do escritório e transmite via SSE. Deps de runtime (zod) vão no bundle.
 //   npm run dev    -> tsx server/index.ts --dev (Vite em middleware mode, HMR no mesmo servidor)
 //   npm start      -> node dist/server/index.js (serve dist/client)
 import http from 'node:http';
@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import { codexDirsRefused, isDefaultDir } from './accounts/detect';
 import { AccountsService } from './accounts/service';
 import { isTruthy, loadConfig, messagesOffReason, terminalOffReason, worldSocketUrl } from './config';
+import { loadProjectDotEnv } from './dotenv';
 import { createApiHandler, sendJson } from './http/app';
 import { createRequestGuard, isLoopbackHost } from './http/guard';
 import { createRemoteGate, isRemoteRequest, loadSecret, RemoteSessions, startRemoteListener, type RemoteListener } from './http/remote';
@@ -62,6 +63,8 @@ import { BuildingTokens } from './world/tokens';
 import { BuildingUplink } from './world/uplink';
 import { WorldViewer } from './world/viewer';
 
+// .env da pasta do projeto (sem sobrescrever o ambiente do shell/serviço). Antes do loadConfig.
+loadProjectDotEnv();
 const config = loadConfig();
 const startedAt = Date.now();
 
@@ -497,6 +500,13 @@ server.listen(config.port, config.host, () => {
     }
   } else {
     log.info(tr('   Codex: {0}.', [config.codex ? tr('nenhuma pasta do Codex encontrada (defina HABBLAUD_CODEX_DIRS)') : tr('desligado (HABBLAUD_CODEX=0)')]));
+  }
+  if (cursor) {
+    const cursorSources = cursor.sources();
+    const open = cursorSources.reduce((n, s) => n + s.sessions, 0);
+    log.info(tr('   Cursor: {0} conta(s), {1} sessão(ões) aberta(s).', [cursorSources.length, open]));
+  } else {
+    log.info(tr('   Cursor: {0}.', [config.cursor ? tr('nenhuma pasta do Cursor encontrada (defina HABBLAUD_CURSOR_DIRS)') : tr('desligado (HABBLAUD_CURSOR=0)')]));
   }
   if (office.isDemo()) log.info(tr('   Modo demonstração ligado (agentes simulados misturados aos reais).'));
   if (config.terminal) log.info(tr('   Terminal: ligado (acesso só local).'));

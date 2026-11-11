@@ -5,10 +5,13 @@ import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { discoverClaudeDirs } from './accounts/detect';
+import { envOnByDefault, isTruthy, parseEnvPort, parseHabblaudEnv } from './env';
 import { parseAllowedHosts } from './http/guard';
 import { parseRemoteConfig, type RemoteConfig } from './http/remote';
 import { parseGithubRepo } from './updates/checker';
 import { tr } from '../shared/i18n';
+
+export { isTruthy, parseEnvPort, parseHabblaudEnv } from './env';
 
 export interface ServerConfig {
   port: number;
@@ -80,10 +83,6 @@ export interface WorldConfig {
   dev: boolean;
   /** Por que HABBLAUD_WORLD_URL foi recusada (vai para o log ao iniciar). */
   warning?: string;
-}
-
-export function isTruthy(v: string | undefined): boolean {
-  return !!v && /^(1|true|yes|sim|on)$/i.test(v.trim());
 }
 
 /** Sobe a partir de `from` até achar o package.json do projeto. */
@@ -190,8 +189,7 @@ const LOCAL_WORLD_HOSTS: readonly string[] = ['127.0.0.1', 'host.docker.internal
  * cai no padrão: o recurso fica desligado, com o motivo em `warning`.
  */
 export function parseWorldConfig(env: NodeJS.ProcessEnv, argv: string[]): WorldConfig {
-  const flag = env.HABBLAUD_WORLD?.trim();
-  const enabled = !flag || isTruthy(flag);
+  const enabled = envOnByDefault(env.HABBLAUD_WORLD);
   const dev = argv.includes('--dev') || isTruthy(env.HABBLAUD_WORLD_DEV);
   if (!enabled) return { enabled, dev };
   const raw = env.HABBLAUD_WORLD_URL?.trim();
@@ -224,16 +222,16 @@ export function worldSocketUrl(base: string): string {
   return `${base.replace(/^http/, 'ws').replace(/\/+$/, '')}/v1/socket`;
 }
 
-export function loadConfig(env: NodeJS.ProcessEnv = process.env, argv: string[] = process.argv): ServerConfig {
+export function loadConfig(rawEnv: NodeJS.ProcessEnv = process.env, argv: string[] = process.argv): ServerConfig {
+  const env = parseHabblaudEnv(rawEnv);
   const home = env.HOME || homedir();
   const inDocker = detectDocker(env);
-  const port = Number.parseInt(env.HABBLAUD_PORT ?? '', 10);
   const rootDir = findRoot(dirname(fileURLToPath(import.meta.url)));
   const host = env.HABBLAUD_HOST?.trim() || '127.0.0.1';
   const pkg = readPackage(rootDir);
   const remote = parseRemoteConfig(env, inDocker);
   return {
-    port: Number.isFinite(port) && port > 0 && port < 65536 ? port : 4747,
+    port: parseEnvPort(env.HABBLAUD_PORT),
     host,
     dev: argv.includes('--dev'),
     demo: isTruthy(env.HABBLAUD_DEMO),
@@ -245,13 +243,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, argv: string[] 
     allowedHosts: parseAllowedHosts(env.HABBLAUD_ALLOWED_HOSTS),
     terminal: terminalOffReason(env, host, inDocker) === undefined,
     messages: messagesOffReason(env, host, inDocker) === undefined,
-    timeline: !env.HABBLAUD_TIMELINE?.trim() || isTruthy(env.HABBLAUD_TIMELINE),
+    timeline: envOnByDefault(env.HABBLAUD_TIMELINE),
     rootDir,
     version: pkg.version,
     repo: pkg.repo,
-    updateCheck: !env.HABBLAUD_UPDATE_CHECK?.trim() || isTruthy(env.HABBLAUD_UPDATE_CHECK),
-    codex: !env.HABBLAUD_CODEX?.trim() || isTruthy(env.HABBLAUD_CODEX),
-    cursor: !env.HABBLAUD_CURSOR?.trim() || isTruthy(env.HABBLAUD_CURSOR),
+    updateCheck: envOnByDefault(env.HABBLAUD_UPDATE_CHECK),
+    codex: envOnByDefault(env.HABBLAUD_CODEX),
+    cursor: envOnByDefault(env.HABBLAUD_CURSOR),
     remote: remote.config,
     remoteWarning: remote.warning,
     world: parseWorldConfig(env, argv),

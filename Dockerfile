@@ -22,8 +22,8 @@ COPY . .
 RUN npm run build
 
 # ---------------------------------------------------------------------------------------------
-# Estágio 2: runtime enxuto. O servidor não tem dependências de runtime (só módulos node:*),
-# então basta o dist/ e o package.json (nome, versão e "type": "module").
+# Estágio 2: runtime enxuto. O esbuild empacota as deps de runtime (ex.: zod) no dist/server;
+# no container bastam o dist/ e o package.json (nome, versão e "type": "module") — sem node_modules.
 # ---------------------------------------------------------------------------------------------
 FROM node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS runtime
 
