@@ -2461,6 +2461,8 @@ export const FR: Readonly<Record<string, string>> = {
   "para tirar o aviso de segurança (confira a impressão digital que o npm run remote:setup mostrou).": "pour supprimer l'avertissement de sécurité (vérifiez l'empreinte affichée par npm run remote:setup).",
   "Habblaud · entrar": "Habblaud · connexion",
   "Sair do Discord": "Se déconnecter de Discord",
+  "Sair (encerrar login Discord)": "Se déconnecter (fermer la session Discord)",
+  "Sair ({0})": "Se déconnecter ({0})",
   "Login Discord": "Connexion Discord",
   "Sessão Discord": "Session Discord",
   "Conectado como {0}.": "Connecté en tant que {0}.",

@@ -1,5 +1,5 @@
 // Barra superior: marca, conexão, contadores, uso por conta e botões de controle.
-import { access } from '../net/access';
+import { access, discordLogout } from '../net/access';
 import { SpawnPanel } from './spawn';
 import type { UiComponent, UiContext } from './context';
 import { h, iconButton, setAttr, setHidden, setText, setTitle, setVariant } from './dom';
@@ -47,6 +47,9 @@ export class TopBar implements UiComponent {
   private feedBtn: HTMLButtonElement;
   private timelapseBtn: HTMLButtonElement;
   readonly settingsBtn: HTMLButtonElement;
+  /** Encerra a sessão Discord e volta à tela de entrada. */
+  private readonly logoutBtn: HTMLButtonElement;
+  private logoutBusy = false;
   /** Abre a janela do Habblaud World (ao lado de Configurações); a janela decide quando ele aparece. */
   readonly worldBtn: HTMLButtonElement;
   private readonly spawnBtn: HTMLButtonElement;
@@ -111,6 +114,8 @@ export class TopBar implements UiComponent {
     this.worldBtn.hidden = true;
     this.settingsBtn = iconButton(ICONS.settings, tr('Configurações'), () => ctx.toggleSettings());
     this.settingsBtn.setAttribute('aria-haspopup', 'dialog');
+    this.logoutBtn = iconButton(ICONS.logout, tr('Sair (encerrar login Discord)'), () => void this.logout(), 'ui-btn-logout');
+    this.logoutBtn.hidden = true;
     this.spawnPanel = new SpawnPanel(ctx);
     ctx.root.append(this.spawnPanel.el);
     this.spawnBtn = iconButton(ICONS.newAgent, tr('Novo agente: começa uma sessão do Claude Code no computador'), () => this.spawnPanel.toggle(this.spawnBtn), 'ui-btn-spawn');
@@ -133,6 +138,7 @@ export class TopBar implements UiComponent {
       this.feedBtn,
       this.worldBtn,
       this.settingsBtn,
+      this.logoutBtn,
       iconButton(ICONS.help, tr('Ajuda (?)'), () => ctx.openHelp()),
     );
     this.panelGroup = panelGroup;
@@ -219,12 +225,31 @@ export class TopBar implements UiComponent {
 
     this.usage.render();
     this.version.render();
-    setHidden(this.spawnBtn, !access().spawn || store.mock || store.replaying);
+    const a = access();
+    setHidden(this.spawnBtn, !a.spawn || store.mock || store.replaying);
+    setHidden(this.logoutBtn, !a.discord || store.mock);
+    this.logoutBtn.disabled = this.logoutBusy;
+    if (a.discord) {
+      const label = tr('Sair ({0})', [a.discord.username]);
+      setTitle(this.logoutBtn, label);
+      setAttr(this.logoutBtn, 'aria-label', label);
+    }
 
     this.sidebarBtn.setAttribute('aria-pressed', String(this.ctx.isPanelOpen('sidebar')));
     this.feedBtn.setAttribute('aria-pressed', String(this.ctx.isPanelOpen('feed')));
     this.timelapseBtn.setAttribute('aria-pressed', String(this.ctx.isTimelapseOpen()));
     setHidden(this.timelapseBtn, store.mock);
+  }
+
+  private async logout(): Promise<void> {
+    if (this.logoutBusy) return;
+    this.logoutBusy = true;
+    this.logoutBtn.disabled = true;
+    if (!(await discordLogout())) {
+      this.logoutBusy = false;
+      this.logoutBtn.disabled = false;
+      this.ctx.announce(tr('Não foi possível sair: sem resposta do servidor.'));
+    }
   }
 
   private renderShells(n: number, now: number): void {
