@@ -722,7 +722,14 @@ since the numbers were collected shows up as **—** until new numbers arrive.
 
 ## Configuration
 
-Everything works without configuring anything. If you need to adjust something, use environment variables:
+Everything works without configuring anything. To keep options in the project folder, copy the template and edit:
+
+```bash
+cp .env.example .env
+```
+
+The server (`npm start`, `npm run dev`) and Docker Compose read `.env`. Variables already set in the shell win.
+Without a `.env`, the defaults below apply:
 
 | Variable | Default | What for |
 | --- | --- | --- |
@@ -743,6 +750,8 @@ Everything works without configuring anything. If you need to adjust something, 
 | `HABBLAUD_CODEX` | on | `0` turns off Codex in the office. |
 | `HABBLAUD_CODEX_DIRS` | automatic detection | Codex folders, comma-separated (instead of `~/.codex*` and `CODEX_HOME`). |
 | `HABBLAUD_CODEX_BIN` | `codex` from PATH (on Windows, `codex.exe`) | The Codex binary that delivers the messages (`codex queue`), in Node mode or in `npm run codex:bridge`. |
+| `HABBLAUD_CURSOR` | on | `0` turns off Cursor in the office. |
+| `HABBLAUD_CURSOR_DIRS` | automatic detection | Cursor folders, comma-separated (instead of `~/.cursor*` and `CURSOR_HOME`). |
 | `HABBLAUD_UPDATE_CHECK` | on | `0` turns off the new-version check (a request to the repository's releases on GitHub every 6 h). |
 | `HABBLAUD_LANG` | system language (except English), otherwise `pt-BR` | Language of the texts the server builds (activities, notices, logs): `pt-BR`, `en`, `es` or `fr`. The interface follows the browser or the choice in Settings › Language. See [Languages](#languages). |
 | `HABBLAUD_ACCOUNTS` | — | JSON to customize name, letter or color, matched by the account folder name. E.g. `[{"id":".claude-conta2","name":"Trabalho","short":"T","color":"#5cc97b"}]`. |
