@@ -4,7 +4,9 @@
 
 ## Foco
 
-Fork Coruscant do Habblaud com:
+Fork Coruscant do Habblaud. Marca visível na UI (wordmark pixel + placa): **Coruscant** (`Corus` creme + `cant` âmbar).
+
+Fork com:
 
 1. Gate Discord OAuth obrigatório + allowlist + hook Bearer
 2. Cursor como terceira fonte de agentes

@@ -172,8 +172,8 @@ export class ConnectionBanner implements UiComponent {
     setText(
       this.text,
       store.snapshot
-        ? tr('Sem conexão com o servidor do Habblaud há algum tempo. O escritório mostra o último estado conhecido.')
-        : tr('O servidor do Habblaud não responde. Confira se ele está rodando (npm run dev ou npm start).'),
+        ? tr('Sem conexão com o servidor do Coruscant há algum tempo. O escritório mostra o último estado conhecido.')
+        : tr('O servidor do Coruscant não responde. Confira se ele está rodando (npm run dev ou npm start).'),
     );
     const next = store.nextRetryAt;
     const secs = next === null ? 0 : Math.max(1, Math.ceil((next - Date.now()) / 1000));

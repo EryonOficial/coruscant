@@ -11,7 +11,7 @@ scripts/assets/
   generate.mjs          chama a OpenRouter (Node 24, sem dependências), com cache, retries, orçamento e log
   postprocess.py        CLI: processa as imagens brutas e compõe marca, ícones, molduras, og-image e manifest
   pixelops.py           operações de imagem (chroma key, detecção de grade, redução por moda, paleta...)
-  pixelart.py           pixel art desenhada à mão: mark 32/16 px, fonte bitmap e placa "Habblaud"
+  pixelart.py           pixel art desenhada à mão: mark 32/16 px, fonte bitmap e placa "Coruscant"
   test_pixelops.py      testes (unittest da stdlib)
   generation-log.json   todas as requisições: modelo, prompt exato, arquivo, custo e tomadas escolhidas
   .cache/               (ignorado) raw/ = imagem bruta em uso, takes/ = todas as tomadas, contact-sheet.png

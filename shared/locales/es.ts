@@ -488,8 +488,8 @@ export const ES: Readonly<Record<string, string>> = {
   "O escritório está vazio": "La oficina está vacía",
   "Não foi possível ligar a demonstração.": "No se pudo activar la demostración.",
   "Tentar agora": "Intentar ahora",
-  "Sem conexão com o servidor do Habblaud há algum tempo. O escritório mostra o último estado conhecido.": "Sin conexión con el servidor de Habblaud desde hace un rato. La oficina muestra el último estado conocido.",
-  "O servidor do Habblaud não responde. Confira se ele está rodando (npm run dev ou npm start).": "El servidor de Habblaud no responde. Comprueba que esté en ejecución (npm run dev o npm start).",
+  "Sem conexão com o servidor do Coruscant há algum tempo. O escritório mostra o último estado conhecido.": "Sin conexión con el servidor de Coruscant desde hace un rato. La oficina muestra el último estado conocido.",
+  "O servidor do Coruscant não responde. Confira se ele está rodando (npm run dev ou npm start).": "El servidor de Coruscant no responde. Comprueba que esté en ejecución (npm run dev o npm start).",
   " Tentando reconectar…": " Intentando reconectar…",
   " Nova tentativa em {0} s.": " Nuevo intento en {0} s.",
 

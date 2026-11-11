@@ -658,7 +658,7 @@
 
 .ui-wordmark {
   display: block;
-  width: 135px;
+  width: 150px; /* 50px × 3 — wordmark "Coruscant" */
   height: 24px;
   image-rendering: pixelated;
 }
@@ -3349,7 +3349,7 @@
 }
 
 .ui-splash__name .ui-wordmark {
-  width: 225px;
+  width: 250px; /* 50px × 5 */
   height: 40px;
 }
 

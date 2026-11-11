@@ -481,8 +481,8 @@ export const FR: Readonly<Record<string, string>> = {
   "O escritório está vazio": "Le bureau est vide",
   "Não foi possível ligar a demonstração.": "Impossible de lancer la démonstration.",
   "Tentar agora": "Réessayer maintenant",
-  "Sem conexão com o servidor do Habblaud há algum tempo. O escritório mostra o último estado conhecido.": "Pas de connexion avec le serveur Habblaud depuis un moment. Le bureau affiche le dernier état connu.",
-  "O servidor do Habblaud não responde. Confira se ele está rodando (npm run dev ou npm start).": "Le serveur Habblaud ne répond pas. Vérifiez qu'il tourne (npm run dev ou npm start).",
+  "Sem conexão com o servidor do Coruscant há algum tempo. O escritório mostra o último estado conhecido.": "Pas de connexion avec le serveur Coruscant depuis un moment. Le bureau affiche le dernier état connu.",
+  "O servidor do Coruscant não responde. Confira se ele está rodando (npm run dev ou npm start).": "Le serveur Coruscant ne répond pas. Vérifiez qu'il tourne (npm run dev ou npm start).",
   " Tentando reconectar…": " Tentative de reconnexion…",
   " Nova tentativa em {0} s.": " Nouvelle tentative dans {0} s.",
 

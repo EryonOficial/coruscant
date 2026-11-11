@@ -10,6 +10,11 @@ do meio (0.**3**.0).
 
 ## [Não lançado]
 
+### Alterado
+
+- **Marca na UI: Coruscant.** O wordmark em pixels da barra superior (e do splash) e a placa da recepção passam a
+  ler **Coruscant** (`Corus` creme + `cant` âmbar), no lugar de Habblaud.
+
 ### Adicionado
 
 - **Cursor no escritório (MVP).** Sessões do Agent Chat do Cursor entram no mesmo escritório com o selo **CURSOR**,
