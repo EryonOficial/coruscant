@@ -20,6 +20,11 @@ export interface DiscordAuthConfig {
   clientId: string;
   clientSecret: string;
   allowedIds: readonly string[];
+  /**
+   * Redirect URI fixo enviado ao Discord (tem que ser idêntico ao cadastrado no portal).
+   * Padrão: `http://127.0.0.1:<porta>/auth/discord/callback` — não usa `localhost` (o Discord trata como outro URI).
+   */
+  redirectUri: string;
   /** Bearer para hooks/mod/bridge; ausente = hooks também ficam bloqueados. */
   hookToken?: string;
   /** Por que `ready` é false (log / página de bloqueio). */
@@ -238,17 +243,20 @@ export function worldSocketUrl(base: string): string {
 }
 
 /** Discord OAuth a partir do ambiente. Sem client/secret/IDs, `ready` fica false (gate bloqueia). */
-export function parseDiscordAuthConfig(env: NodeJS.ProcessEnv): DiscordAuthConfig {
+export function parseDiscordAuthConfig(env: NodeJS.ProcessEnv, port = 4747): DiscordAuthConfig {
   const clientId = env.HABBLAUD_DISCORD_CLIENT_ID?.trim() ?? '';
   const clientSecret = env.HABBLAUD_DISCORD_CLIENT_SECRET?.trim() ?? '';
   const allowedIds = parseDiscordAllowedIds(env.HABBLAUD_DISCORD_ALLOWED_IDS);
   const hookToken = env.HABBLAUD_HOOK_TOKEN?.trim() || undefined;
+  const redirectUri =
+    env.HABBLAUD_DISCORD_REDIRECT_URI?.trim() || `http://127.0.0.1:${port}/auth/discord/callback`;
   if (!clientId || !clientSecret) {
     return {
       ready: false,
       clientId,
       clientSecret,
       allowedIds,
+      redirectUri,
       hookToken,
       reason: tr('defina HABBLAUD_DISCORD_CLIENT_ID e HABBLAUD_DISCORD_CLIENT_SECRET'),
     };
@@ -259,11 +267,12 @@ export function parseDiscordAuthConfig(env: NodeJS.ProcessEnv): DiscordAuthConfi
       clientId,
       clientSecret,
       allowedIds,
+      redirectUri,
       hookToken,
       reason: tr('defina HABBLAUD_DISCORD_ALLOWED_IDS com pelo menos um ID Discord'),
     };
   }
-  return { ready: true, clientId, clientSecret, allowedIds, hookToken };
+  return { ready: true, clientId, clientSecret, allowedIds, redirectUri, hookToken };
 }
 
 export function loadConfig(rawEnv: NodeJS.ProcessEnv = process.env, argv: string[] = process.argv): ServerConfig {
@@ -297,6 +306,6 @@ export function loadConfig(rawEnv: NodeJS.ProcessEnv = process.env, argv: string
     remote: remote.config,
     remoteWarning: remote.warning,
     world: parseWorldConfig(env, argv),
-    discord: parseDiscordAuthConfig(env),
+    discord: parseDiscordAuthConfig(env, parseEnvPort(env.HABBLAUD_PORT)),
   };
 }

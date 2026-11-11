@@ -490,7 +490,7 @@ server.listen(config.port, config.host, () => {
   const host = config.host === '0.0.0.0' || config.host === '::' ? 'localhost' : config.host;
   log.info(tr('🏢 Habblaud {0}{1}{2} em http://{3}:{4}', [config.version, config.dev ? ' (dev)' : '', config.inDocker ? ' (docker)' : '', host, config.port]));
   if (config.discord.ready) {
-    log.info(tr('   Login Discord: ligado ({0} ID(s) permitidos).', [config.discord.allowedIds.length]));
+    log.info(tr('   Login Discord: ligado ({0} ID(s) permitidos); redirect {1}.', [config.discord.allowedIds.length, config.discord.redirectUri]));
     if (!config.discord.hookToken) log.warn(tr('   Login Discord: sem HABBLAUD_HOOK_TOKEN — hooks e o mod ficam bloqueados.'));
   } else {
     log.warn(tr('   Login Discord: bloqueado ({0}).', [config.discord.reason ?? tr('não configurado')]));

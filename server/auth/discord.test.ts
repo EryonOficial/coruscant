@@ -37,7 +37,24 @@ describe('parseDiscordAuthConfig', () => {
       HABBLAUD_DISCORD_ALLOWED_IDS: '123456789012345678',
       HABBLAUD_HOOK_TOKEN: 'tok',
     });
-    expect(ok).toMatchObject({ ready: true, clientId: 'c', hookToken: 'tok', allowedIds: ['123456789012345678'] });
+    expect(ok).toMatchObject({
+      ready: true,
+      clientId: 'c',
+      hookToken: 'tok',
+      allowedIds: ['123456789012345678'],
+      redirectUri: 'http://127.0.0.1:4747/auth/discord/callback',
+    });
+    expect(
+      parseDiscordAuthConfig(
+        {
+          HABBLAUD_DISCORD_CLIENT_ID: 'c',
+          HABBLAUD_DISCORD_CLIENT_SECRET: 's',
+          HABBLAUD_DISCORD_ALLOWED_IDS: '123456789012345678',
+          HABBLAUD_DISCORD_REDIRECT_URI: 'http://localhost:4747/auth/discord/callback',
+        },
+        4747,
+      ).redirectUri,
+    ).toBe('http://localhost:4747/auth/discord/callback');
   });
 });
 
@@ -50,7 +67,13 @@ describe('DiscordSessions', () => {
     expect(sessions.verify(undefined)).toBeUndefined();
     expect(sessions.verify('lixo')).toBeUndefined();
     const other = createDiscordSessions(
-      { ready: true, clientId: 'c', clientSecret: 's', allowedIds: ['999999999999999999'] },
+      {
+        ready: true,
+        clientId: 'c',
+        clientSecret: 's',
+        allowedIds: ['999999999999999999'],
+        redirectUri: 'http://127.0.0.1:4747/auth/discord/callback',
+      },
       secret,
     );
     expect(other.verify(token)).toBeUndefined();

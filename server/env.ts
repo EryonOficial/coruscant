@@ -51,6 +51,7 @@ export const habblaudEnvSchema = z
     HABBLAUD_DISCORD_CLIENT_ID: envString,
     HABBLAUD_DISCORD_CLIENT_SECRET: envString,
     HABBLAUD_DISCORD_ALLOWED_IDS: envString,
+    HABBLAUD_DISCORD_REDIRECT_URI: envString,
     HABBLAUD_HOOK_TOKEN: envString,
     HABBLAUD_BUILD_COMMIT: envString,
     HABBLAUD_BUILD_DIRTY: envString,

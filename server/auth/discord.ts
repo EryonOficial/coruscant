@@ -152,12 +152,6 @@ function requestIsSecure(req: IncomingMessage): boolean {
   return !!(req.socket as { encrypted?: boolean }).encrypted;
 }
 
-function publicOrigin(req: IncomingMessage, url: URL): string {
-  const host = req.headers.host || url.host;
-  const proto = requestIsSecure(req) ? 'https' : 'http';
-  return `${proto}://${host}`;
-}
-
 export type DiscordFetch = (input: string, init?: RequestInit) => Promise<Response>;
 
 export interface DiscordGateDeps {
@@ -168,7 +162,7 @@ export interface DiscordGateDeps {
   fetchImpl?: DiscordFetch;
 }
 
-export function loginPage(opts: { ready: boolean; reason?: string; error?: string }): string {
+export function loginPage(opts: { ready: boolean; reason?: string; error?: string; redirectUri?: string }): string {
   const err =
     opts.error === 'forbidden'
       ? tr('Sua conta Discord não está na lista de IDs permitidos.')
@@ -207,6 +201,8 @@ export function loginPage(opts: { ready: boolean; reason?: string; error?: strin
   a.btn { display: block; text-align: center; text-decoration: none; padding: 12px; font-weight: 700; color: #fff;
           background: #5865F2; border-radius: 6px; }
   a.btn:hover { filter: brightness(1.08); }
+  p.hint { margin-top: 20px; word-break: break-all; }
+  code { color: #e8e6df; font-size: 12px; }
 </style>
 </head>
 <body>
@@ -249,7 +245,15 @@ export function createDiscordGate(deps: DiscordGateDeps): (req: IncomingMessage,
         return true;
       }
       const error = url.searchParams.get('error') || undefined;
-      sendHtml(res, loginPage({ ready: deps.config.ready, reason: deps.config.reason, error }));
+      sendHtml(
+        res,
+        loginPage({
+          ready: deps.config.ready,
+          reason: deps.config.reason,
+          error,
+          redirectUri: deps.config.redirectUri,
+        }),
+      );
       return true;
     }
 
@@ -260,17 +264,13 @@ export function createDiscordGate(deps: DiscordGateDeps): (req: IncomingMessage,
         return true;
       }
       const { state, maxAgeS } = issueOAuthState(deps.secret);
-      const redirectUri = `${publicOrigin(req, url)}/auth/discord/callback`;
       const params = new URLSearchParams({
         client_id: deps.config.clientId,
         response_type: 'code',
         scope: 'identify',
-        redirect_uri: redirectUri,
+        redirect_uri: deps.config.redirectUri,
         state,
-        prompt: 'none',
       });
-      // prompt=none can fail for first login; Discord ignores unknown — use consent default by omitting prompt
-      params.delete('prompt');
       redirect(res, `https://discord.com/api/oauth2/authorize?${params}`, cookieHeader(DISCORD_STATE_COOKIE, state, maxAgeS, secure, 'Lax'));
       return true;
     }
@@ -296,7 +296,6 @@ export function createDiscordGate(deps: DiscordGateDeps): (req: IncomingMessage,
         redirect(res, '/auth/discord/login?error=oauth', clearCookie(DISCORD_STATE_COOKIE, secure));
         return true;
       }
-      const redirectUri = `${publicOrigin(req, url)}/auth/discord/callback`;
       void (async () => {
         try {
           const tokenRes = await fetchImpl('https://discord.com/api/oauth2/token', {
@@ -307,7 +306,7 @@ export function createDiscordGate(deps: DiscordGateDeps): (req: IncomingMessage,
               client_secret: deps.config.clientSecret,
               grant_type: 'authorization_code',
               code,
-              redirect_uri: redirectUri,
+              redirect_uri: deps.config.redirectUri,
             }),
           });
           if (!tokenRes.ok) {

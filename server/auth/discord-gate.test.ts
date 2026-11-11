@@ -37,6 +37,7 @@ const readyCfg: DiscordAuthConfig = {
   clientId: 'client',
   clientSecret: 'secret',
   allowedIds: ['123456789012345678'],
+  redirectUri: 'http://127.0.0.1:4747/auth/discord/callback',
   hookToken: 'hook-secret',
 };
 
@@ -47,6 +48,7 @@ describe('createDiscordGate', () => {
       clientId: '',
       clientSecret: '',
       allowedIds: [],
+      redirectUri: 'http://127.0.0.1:4747/auth/discord/callback',
       reason: 'falta config',
     });
     const page = await fetch(`${base}/auth/discord/login`);
