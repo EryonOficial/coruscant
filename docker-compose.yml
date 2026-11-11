@@ -41,6 +41,11 @@ services:
       HABBLAUD_CODEX: ${HABBLAUD_CODEX:-}
       # 0 desliga as sessões do Cursor no escritório.
       HABBLAUD_CURSOR: ${HABBLAUD_CURSOR:-}
+      # Login Discord (obrigatório): client, secret, IDs permitidos e token dos hooks.
+      HABBLAUD_DISCORD_CLIENT_ID: ${HABBLAUD_DISCORD_CLIENT_ID:-}
+      HABBLAUD_DISCORD_CLIENT_SECRET: ${HABBLAUD_DISCORD_CLIENT_SECRET:-}
+      HABBLAUD_DISCORD_ALLOWED_IDS: ${HABBLAUD_DISCORD_ALLOWED_IDS:-}
+      HABBLAUD_HOOK_TOKEN: ${HABBLAUD_HOOK_TOKEN:-}
       # 1 liga o Novo agente pelo escritório (no Docker, quem começa a sessão é o auxiliar do host, npm run
       # codex:bridge; o terminal interativo em si não roda no container).
       HABBLAUD_PTY: ${HABBLAUD_PTY:-}
