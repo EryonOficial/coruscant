@@ -17,6 +17,13 @@ do meio (0.**3**.0).
   atividade vêm dos eventos dos hooks (`POST /api/cursor/events`); sem aprovar permissões pelo escritório e sem
   “Mandar mensagem” nesta versão. Variáveis: `HABBLAUD_CURSOR`, `HABBLAUD_CURSOR_DIRS`, `CURSOR_HOME`. Agentes do
   Cursor ficam de fora do uplink do Habblaud World (o protocolo do mundo só conhece Claude e Codex).
+- **`.env.example` e leitura do `.env` no modo Node.** O servidor (`npm start` / `npm run dev`) carrega o `.env` da
+  pasta do projeto sem dependências (variáveis já definidas no ambiente continuam valendo). Copie com
+  `cp .env.example .env`.
+- **Zod na validação do ambiente.** Porta, flags e chaves `HABBLAUD_*` passam por schema em `server/env.ts`; o
+  esbuild empacota o Zod no `dist/server` (a imagem Docker segue sem `node_modules`).
+- **Log de boot do Cursor.** Ao subir, o servidor informa contas/sessões do Cursor (ou se está desligado /
+  sem pasta), no mesmo estilo do Codex.
 
 ## [1.0.3] - 2026-10-16
 
