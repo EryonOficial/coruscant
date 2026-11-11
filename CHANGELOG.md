@@ -10,6 +10,14 @@ do meio (0.**3**.0).
 
 ## [Não lançado]
 
+### Adicionado
+
+- **Cursor no escritório (MVP).** Sessões do Agent Chat do Cursor entram no mesmo escritório com o selo **CURSOR**,
+  via hooks em `~/.cursor/hooks.json` (`npm run cursor:install` / `cursor:status` / `cursor:uninstall`). Presença e
+  atividade vêm dos eventos dos hooks (`POST /api/cursor/events`); sem aprovar permissões pelo escritório e sem
+  “Mandar mensagem” nesta versão. Variáveis: `HABBLAUD_CURSOR`, `HABBLAUD_CURSOR_DIRS`, `CURSOR_HOME`. Agentes do
+  Cursor ficam de fora do uplink do Habblaud World (o protocolo do mundo só conhece Claude e Codex).
+
 ## [1.0.3] - 2026-10-16
 
 ### Corrigido

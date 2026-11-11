@@ -317,8 +317,12 @@ describe('projeção: regras', () => {
     expect(validate(u)).toEqual([]);
   });
 
-  it('provider ausente é claude; codex continua codex', () => {
-    const u = project(input([room('/p/a')], [agent('m1', '/p/a'), agent('m2', '/p/a', { provider: 'codex' })]), new FakeIds(), NOW);
+  it('provider ausente é claude; codex continua codex; cursor fica de fora do World', () => {
+    const u = project(
+      input([room('/p/a')], [agent('m1', '/p/a'), agent('m2', '/p/a', { provider: 'codex' }), agent('m3', '/p/a', { provider: 'cursor' })]),
+      new FakeIds(),
+      NOW,
+    );
     expect(agentsOf(u).map((a) => a.provider).sort()).toEqual(['claude', 'codex']);
   });
 

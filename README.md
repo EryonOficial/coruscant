@@ -211,7 +211,21 @@ you don't end up with two of them capturing usage or answering the same request.
 
 </details>
 
-### 4. Codex in the office (optional)
+### 4. Cursor in the office (optional)
+
+If you use **Cursor** (Agent Chat), its sessions join the same office with the **CURSOR** tag. Habblaud finds the
+folder on its own (`~/.cursor`, `CURSOR_HOME`, or `HABBLAUD_CURSOR_DIRS`). To see Cursor **live**:
+
+```bash
+npm run cursor:install     # adds Habblaud hooks to ~/.cursor/hooks.json (backs up first; others stay)
+npm run cursor:status      # checks hooks and whether Habblaud is responding
+```
+
+Restart Cursor (or check **Settings › Hooks**) to load the hooks. This version shows presence, status, activity, and
+subagents; approving permissions and sending messages from the office are not included yet. `HABBLAUD_CURSOR=0`
+disables the source.
+
+### 5. Codex in the office (optional)
 
 If you also use OpenAI's **Codex** (the `codex` CLI or the app), its sessions join the same office: each
 project is a room — the same room as Claude Code, when both are open in the same project — and each session is a

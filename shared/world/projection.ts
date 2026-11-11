@@ -139,6 +139,8 @@ export function projectWithReport(input: ProjectionInput, ids: WorldIdSource, no
   const byRoom = new Map<string, AgentInfo[]>();
   for (const a of input.agents) {
     if (isDemoId(a.id) || isDemoId(a.roomId) || !roomIds.has(a.roomId)) continue;
+    // O protocolo World só aceita claude|codex: Cursor fica no escritório local (não rotular como Claude).
+    if (a.provider === 'cursor') continue;
     if ((a.kind !== 'main' && a.kind !== 'sub') || !isWorldStatus(a.status)) continue;
     const list = byRoom.get(a.roomId);
     if (list) list.push(a);

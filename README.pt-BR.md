@@ -209,7 +209,21 @@ não ficarem dois capturando o uso ou respondendo o mesmo pedido.
 
 </details>
 
-### 4. Codex no escritório (opcional)
+### 4. Cursor no escritório (opcional)
+
+Se você usa o **Cursor** (Agent Chat), as sessões dele entram no mesmo escritório com o selo **CURSOR**. O Habblaud
+acha sozinho a pasta (`~/.cursor`, `CURSOR_HOME` ou `HABBLAUD_CURSOR_DIRS`). Para ver o Cursor **ao vivo**:
+
+```bash
+npm run cursor:install     # acrescenta os hooks do Habblaud em ~/.cursor/hooks.json (backup antes; os outros ficam)
+npm run cursor:status      # confere se os hooks estão lá e se o Habblaud responde
+```
+
+Reinicie o Cursor (ou confira **Settings › Hooks**) para carregar os hooks. Nesta versão o escritório mostra
+presença, status, atividade e subagentes; ainda não dá para aprovar pedidos nem mandar mensagens pelo Habblaud.
+`HABBLAUD_CURSOR=0` desliga a fonte.
+
+### 5. Codex no escritório (opcional)
 
 Se você também usa o **Codex** da OpenAI (a CLI `codex` ou o app), as sessões dele entram no mesmo escritório: cada
 projeto é uma sala — a mesma sala do Claude Code, quando os dois estão abertos no mesmo projeto — e cada sessão, um

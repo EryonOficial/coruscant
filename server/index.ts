@@ -33,10 +33,13 @@ import { createCodexQueueRunner, findCodexBin } from './messages/codex';
 import { createMessageRoutes } from './messages/http';
 import { MessageRegistry } from './messages/registry';
 import type { CodexLive } from './sources/codex/live';
+import type { CursorLive } from './sources/cursor/live';
 import { ClaudeWatcher } from './sources/watcher';
 import { discoverCodexDirs } from './sources/codex/accounts';
+import { discoverCursorDirs } from './sources/cursor/accounts';
 import { CodexHistory } from './sources/codex/history';
 import { CodexSource } from './sources/codex/source';
+import { CursorSource } from './sources/cursor/source';
 import { createBuildReader, readBuildInfo } from './build';
 import { UpdateChecker } from './updates/checker';
 import { getLocale, tr } from '../shared/i18n';
@@ -130,17 +133,20 @@ const office = new Office({
   updates: () => updates.status(),
   world: () => world?.meta() ?? { enabled: false, configured: false, state: 'off' },
 });
-// Fontes de agentes, uma por ferramenta (sources/source.ts): a do Claude Code e, depois dela, a do Codex (quando há
-// pastas do Codex; HABBLAUD_CODEX=0 desliga), com o histórico dela no HistorySet abaixo e as contas registradas por
-// ela mesma (accounts.setProviderAccounts). `codex` também recebe os eventos dos hooks do Codex (CodexLive).
+// Fontes de agentes, uma por ferramenta (sources/source.ts): Claude Code, Codex (HABBLAUD_CODEX=0 desliga) e Cursor
+// (HABBLAUD_CURSOR=0 desliga). Contas registradas por cada fonte (accounts.setProviderAccounts). Codex e Cursor
+// recebem eventos de hooks (CodexLive / CursorLive).
 const claude = new ClaudeWatcher({ accounts, office, inDocker: config.inDocker });
 const agents = new SourceSet([claude]);
 const codexDirs = config.codex ? discoverCodexDirs(process.env, config.home) : [];
 const codex = codexDirs.length ? new CodexSource({ accounts, office, dirs: codexDirs, env: process.env, home: config.home }) : undefined;
 if (codex) agents.add(codex);
-// Eventos dos hooks do Codex (POST /api/codex/events, mod/habblaud-codex/hook.mjs): vão para a fonte do Codex ao vivo
-// (CodexLive); sem ela (nenhuma pasta do Codex ou HABBLAUD_CODEX=0) a rota responde {ok: false}.
+const cursorDirs = config.cursor ? discoverCursorDirs(process.env, config.home) : [];
+const cursor = cursorDirs.length ? new CursorSource({ accounts, office, dirs: cursorDirs, env: process.env, home: config.home }) : undefined;
+if (cursor) agents.add(cursor);
+// Eventos dos hooks do Codex (POST /api/codex/events) e do Cursor (POST /api/cursor/events).
 const codexLive: CodexLive | undefined = codex;
+const cursorLive: CursorLive | undefined = cursor;
 late.office = office;
 late.agents = agents;
 // Página que pode responder pelo escritório: Host local na porta local; na remota, só com permissions liberado.
@@ -372,6 +378,7 @@ const api = createApiHandler({
     return recentFolders(history ? await history.list().catch(() => []) : [], rooms);
   },
   codexLive,
+  cursorLive,
   stats,
   updates,
   remote: config.remote ? { is: isRemoteRequest, allows: (f) => config.remote!.allow.has(f) } : undefined,
