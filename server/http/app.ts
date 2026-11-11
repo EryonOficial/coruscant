@@ -24,6 +24,7 @@ import { AUDIO_BODY_MAX, type DictationService } from '../dictation/dictation';
 import type { DeliveryIndex } from '../deliveries/deliveries';
 import type { FileFetcher } from '../deliveries/fetcher';
 import { HOST_WAIT_MS } from '../host-wait';
+import { discordUserOf } from '../auth/discord';
 
 export interface ApiDeps {
   office: Office;
@@ -399,6 +400,7 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
       if (!isRead) methodNotAllowed(res, 'GET');
       else {
         const remote = isRemote(req);
+        const discord = discordUserOf(req);
         const access: AccessInfo = {
           remote,
           local: !remote && isLoopbackHost(req.headers.host),
@@ -407,6 +409,7 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
           terminal: !!terminals && trusted(req, 'terminal'),
           spawn: !!deps.spawn && trusted(req, 'spawn'),
           world: !!deps.world && !!deps.terminal && !remote && isLoopbackHost(req.headers.host),
+          ...(discord ? { discord: { id: discord.id, username: discord.username } } : {}),
         };
         sendJson(res, 200, access);
       }

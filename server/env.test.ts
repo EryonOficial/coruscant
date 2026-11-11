@@ -51,4 +51,21 @@ describe('env (Zod)', () => {
     expect(loadConfig({ ...base, HABBLAUD_CODEX: 'false' }, []).codex).toBe(false);
     expect(loadConfig({ ...base, HABBLAUD_DEMO: 'yes' }, []).demo).toBe(true);
   });
+
+  it('loadConfig inclui discord (bloqueado sem IDs)', () => {
+    const cfg = loadConfig({ HOME: '/tmp/habblaud-env-test', HABBLAUD_IN_DOCKER: '0' }, []);
+    expect(cfg.discord.ready).toBe(false);
+    const ready = loadConfig(
+      {
+        HOME: '/tmp/habblaud-env-test',
+        HABBLAUD_IN_DOCKER: '0',
+        HABBLAUD_DISCORD_CLIENT_ID: 'id',
+        HABBLAUD_DISCORD_CLIENT_SECRET: 'sec',
+        HABBLAUD_DISCORD_ALLOWED_IDS: '123456789012345678',
+      },
+      [],
+    );
+    expect(ready.discord.ready).toBe(true);
+    expect(ready.discord.allowedIds).toEqual(['123456789012345678']);
+  });
 });

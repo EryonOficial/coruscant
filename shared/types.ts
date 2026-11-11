@@ -397,6 +397,8 @@ export interface AccessInfo {
    * com Host local. Ausente em servidores antigos.
    */
   world?: boolean;
+  /** Sessão Discord do gate (ausente = servidor antigo ou autenticação por hook token). */
+  discord?: { id: string; username: string };
 }
 
 export interface FeedItem {

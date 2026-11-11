@@ -48,6 +48,10 @@ export const habblaudEnvSchema = z
     HABBLAUD_REMOTE_NAME: envString,
     HABBLAUD_REMOTE_TLS_DIR: envString,
     HABBLAUD_REMOTE_INSECURE_HTTP: envString,
+    HABBLAUD_DISCORD_CLIENT_ID: envString,
+    HABBLAUD_DISCORD_CLIENT_SECRET: envString,
+    HABBLAUD_DISCORD_ALLOWED_IDS: envString,
+    HABBLAUD_HOOK_TOKEN: envString,
     HABBLAUD_BUILD_COMMIT: envString,
     HABBLAUD_BUILD_DIRTY: envString,
   })
@@ -92,4 +96,28 @@ export function envOnByDefault(v: string | undefined): boolean {
 export function parseEnvPort(raw: string | undefined, fallback = 4747): number {
   const result = envPortSchema.safeParse(raw);
   return result.success ? result.data : fallback;
+}
+
+/** ID de usuário Discord (snowflake). */
+export const discordUserIdSchema = z
+  .string()
+  .trim()
+  .regex(/^\d{17,20}$/);
+
+/**
+ * Lista de IDs Discord a partir do env (vírgula, ponto-e-vírgula ou espaço).
+ * Devolve um array deduplicado; entradas inválidas são ignoradas.
+ */
+export function parseDiscordAllowedIds(raw: string | undefined): string[] {
+  if (!raw?.trim()) return [];
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const part of raw.split(/[,;\s]+/)) {
+    const id = part.trim();
+    if (!id || seen.has(id)) continue;
+    if (!discordUserIdSchema.safeParse(id).success) continue;
+    seen.add(id);
+    out.push(id);
+  }
+  return out;
 }

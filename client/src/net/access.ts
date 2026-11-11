@@ -1,11 +1,14 @@
 // O que esta página pode fazer, segundo o servidor (GET /api/access, ver AccessInfo). Lido antes de conectar e de novo a
 // cada reconexão (app.ts): HABBLAUD_REMOTE_ALLOW pode mudar com o servidor reiniciado e a página do celular continua aberta.
 // Sem resposta (servidor antigo, rede), cai na regra de antes: só a página aberta pelo próprio computador age, e nunca
-// o Novo agente (opt-in no servidor). Login vencido na porta remota (401): volta à tela de entrada.
+// o Novo agente (opt-in no servidor). Login vencido (401): volta à tela de entrada Discord (/auth/discord/login).
 import type { AccessInfo } from '../../../shared/types';
 
 let current: AccessInfo | null = null;
 const listeners = new Set<() => void>();
+
+/** Tela de entrada Discord (e fallback da porta remota). */
+export const LOGIN_PATH = '/auth/discord/login';
 
 /** Avisa quando o acesso muda (a UI redesenha os botões). Devolve a função que cancela. */
 export function onAccessChange(cb: () => void): () => void {
@@ -14,7 +17,16 @@ export function onAccessChange(cb: () => void): () => void {
 }
 
 function sameAccess(a: AccessInfo | null, b: AccessInfo | null): boolean {
-  return !!a && !!b && (Object.keys(a) as (keyof AccessInfo)[]).every((k) => a[k] === b[k]) && Object.keys(a).length === Object.keys(b).length;
+  if (!a || !b) return false;
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]) as Set<keyof AccessInfo>;
+  for (const k of keys) {
+    if (k === 'discord') {
+      if (a.discord?.id !== b.discord?.id || a.discord?.username !== b.discord?.username) return false;
+      continue;
+    }
+    if (a[k] !== b[k]) return false;
+  }
+  return true;
 }
 
 /** Hostname do próprio computador (localhost, *.localhost, 127.x, ::1). */
@@ -45,13 +57,16 @@ export async function loadAccess(fetchImpl: typeof fetch = fetch, go: (url: stri
   try {
     const res = await fetchImpl('/api/access', { credentials: 'same-origin', cache: 'no-store', signal: AbortSignal.timeout(ACCESS_TIMEOUT_MS) });
     if (res.status === 401) {
-      go('/login');
+      go(LOGIN_PATH);
       return access();
     }
     if (res.ok) {
       const body: unknown = await res.json();
       if (isAccessInfo(body)) {
-        const next = { ...body, spawn: (body as { spawn?: unknown }).spawn === true };
+        const d = (body as { discord?: { id?: unknown; username?: unknown } }).discord;
+        const discord =
+          d && typeof d.id === 'string' && typeof d.username === 'string' ? { id: d.id, username: d.username } : undefined;
+        const next: AccessInfo = { ...body, spawn: (body as { spawn?: unknown }).spawn === true, ...(discord ? { discord } : {}) };
         const changed = !sameAccess(current, next);
         current = next;
         if (changed) listeners.forEach((cb) => cb());
@@ -77,7 +92,25 @@ export async function remoteLogout(fetchImpl: typeof fetch = fetch, go: (url: st
   } catch {
     return false;
   }
-  go('/login');
+  go(LOGIN_PATH);
+  return true;
+}
+
+/** Encerra a sessão Discord e volta à tela de entrada. */
+export async function discordLogout(fetchImpl: typeof fetch = fetch, go: (url: string) => void = (u) => location.assign(u)): Promise<boolean> {
+  try {
+    const res = await fetchImpl('/api/discord/logout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+      credentials: 'same-origin',
+      cache: 'no-store',
+    });
+    if (!res.ok) return false;
+  } catch {
+    return false;
+  }
+  go(LOGIN_PATH);
   return true;
 }
 

@@ -6,6 +6,7 @@ import http from 'node:http';
 import { join } from 'node:path';
 import { codexDirsRefused, isDefaultDir } from './accounts/detect';
 import { AccountsService } from './accounts/service';
+import { createDiscordGate, createDiscordSessions } from './auth/discord';
 import { isTruthy, loadConfig, messagesOffReason, terminalOffReason, worldSocketUrl } from './config';
 import { loadProjectDotEnv } from './dotenv';
 import { createApiHandler, sendJson } from './http/app';
@@ -419,10 +420,16 @@ if (config.dev) {
 // Host/Origin/Content-Type: barra DNS rebinding e CSRF antes de qualquer rota (inclusive o Vite).
 const guard = createRequestGuard({ allowedHosts: config.allowedHosts });
 
+// Gate Discord (obrigatório): cookie OAuth ou Bearer HABBLAUD_HOOK_TOKEN; /api/health e OAuth públicos.
+const discordSecret = loadSecret(join(config.dataDir, 'discord-secret'));
+const discordSessions = createDiscordSessions(config.discord, discordSecret);
+const discordGate = createDiscordGate({ config: config.discord, sessions: discordSessions, secret: discordSecret });
+
 server.on('request', (req, res) => {
   const url = parseUrl(req);
   try {
     if (guard(req, res)) return;
+    if (discordGate(req, res, url)) return;
     if (!api(req, res, url)) fallback(req, res, url);
   } catch (err) {
     log.warn(tr('Erro ao responder {0} {1}: {2}', [req.method, url.pathname, errMsg(err)]));
@@ -457,6 +464,7 @@ if (config.remote) {
       try {
         if (guard(req, res)) return;
         if (gate(req, res, url)) return;
+        if (discordGate(req, res, url)) return;
         if (!api(req, res, url)) fallback(req, res, url);
       } catch (err) {
         log.warn(tr('Erro ao responder (remoto) {0} {1}: {2}', [req.method, url.pathname, errMsg(err)]));
@@ -481,6 +489,12 @@ if (config.remote) {
 server.listen(config.port, config.host, () => {
   const host = config.host === '0.0.0.0' || config.host === '::' ? 'localhost' : config.host;
   log.info(tr('🏢 Habblaud {0}{1}{2} em http://{3}:{4}', [config.version, config.dev ? ' (dev)' : '', config.inDocker ? ' (docker)' : '', host, config.port]));
+  if (config.discord.ready) {
+    log.info(tr('   Login Discord: ligado ({0} ID(s) permitidos).', [config.discord.allowedIds.length]));
+    if (!config.discord.hookToken) log.warn(tr('   Login Discord: sem HABBLAUD_HOOK_TOKEN — hooks e o mod ficam bloqueados.'));
+  } else {
+    log.warn(tr('   Login Discord: bloqueado ({0}).', [config.discord.reason ?? tr('não configurado')]));
+  }
   const list = accounts.entries();
   if (!list.length) log.warn(tr('Nenhuma pasta do Claude Code encontrada (defina HABBLAUD_CLAUDE_DIRS).'));
   for (const dir of codexDirsRefused(process.env, config.home)) {

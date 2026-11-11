@@ -1,6 +1,6 @@
 // Configurações (popover): opções do escritório, avisos, modo demonstração e Sobre (versão). O Habblaud World tem a
 // janela própria (ui/world/world-dialog.ts); daqui só sai a dica do tema em Aparência, que também vai para o prédio.
-import { access, remoteLogout } from '../net/access';
+import { access, discordLogout, remoteLogout } from '../net/access';
 import type { UiComponent, UiContext } from './context';
 import { h, iconButton, setAttr, setHidden, setText } from './dom';
 import { ICONS } from './icons';
@@ -92,6 +92,10 @@ export class SettingsPopover implements UiComponent {
   private language: ReturnType<typeof segmented<LanguageChoice>>;
   private soundGroup: SoundSettingsGroup;
   private demoGroup: HTMLElement;
+  /** Sessão Discord (gate obrigatório). */
+  private discordGroup: HTMLElement;
+  private discordLogoutBtn: HTMLButtonElement;
+  private discordHint: HTMLElement;
   /** Só na página do celular (porta remota com login): sair deste aparelho. */
   private remoteGroup: HTMLElement;
   private logoutBtn: HTMLButtonElement;
@@ -171,6 +175,19 @@ export class SettingsPopover implements UiComponent {
     );
 
     this.logoutBtn = h('button', { class: 'ui-btn', type: 'button', text: tr('Sair'), on: { click: () => void this.logout() } }) as HTMLButtonElement;
+    this.discordLogoutBtn = h('button', { class: 'ui-btn', type: 'button', text: tr('Sair do Discord'), on: { click: () => void this.discordLogout() } }) as HTMLButtonElement;
+    this.discordHint = h('span', { class: 'ui-set__hint', text: '' });
+    this.discordGroup = h(
+      'div',
+      { class: 'ui-set-group', hidden: true },
+      h('h3', { text: tr('Login Discord') }),
+      h(
+        'div',
+        { class: 'ui-set' },
+        h('div', { class: 'ui-set__text' }, h('span', { class: 'ui-set__label', text: tr('Sessão Discord') }), this.discordHint),
+        this.discordLogoutBtn,
+      ),
+    );
     this.remoteGroup = h(
       'div',
       { class: 'ui-set-group', hidden: true },
@@ -215,6 +232,7 @@ export class SettingsPopover implements UiComponent {
       this.soundGroup.el,
       h('div', { class: 'ui-set-group' }, h('h3', { text: tr('Idioma') }), this.language.row),
       this.demoGroup,
+      this.discordGroup,
       this.remoteGroup,
       this.about.el,
     );
@@ -274,8 +292,17 @@ export class SettingsPopover implements UiComponent {
     }
   }
 
+  private async discordLogout(): Promise<void> {
+    this.discordLogoutBtn.disabled = true;
+    if (!(await discordLogout())) {
+      this.discordLogoutBtn.disabled = false;
+      this.ctx.announce(tr('Não foi possível sair: sem resposta do servidor.'));
+    }
+  }
+
   render(): void {
     const p = this.ctx.prefs;
+    const a = access();
     for (const [key, r] of this.switches) {
       const on = key === 'demo' ? !!this.ctx.store.liveSnapshot?.meta.demo : p[key];
       setAttr(r.btn, 'aria-checked', String(on));
@@ -287,8 +314,10 @@ export class SettingsPopover implements UiComponent {
     this.theme.set(p.theme);
     this.language.set(savedLanguage());
     this.soundGroup.render();
-    setHidden(this.demoGroup, this.ctx.store.mock || access().remote);
-    setHidden(this.remoteGroup, !access().remote);
+    setHidden(this.demoGroup, this.ctx.store.mock || a.remote);
+    setHidden(this.discordGroup, !a.discord);
+    setText(this.discordHint, a.discord ? tr('Conectado como {0}.', [a.discord.username]) : '');
+    setHidden(this.remoteGroup, !a.remote);
     this.about.render();
 
     const notif = this.switches.get('browserNotifications')!;

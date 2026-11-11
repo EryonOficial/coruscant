@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { access, fallbackAccess, loadAccess, onAccessChange, remoteLogout, setAccess } from './access';
+import { access, discordLogout, fallbackAccess, loadAccess, LOGIN_PATH, onAccessChange, remoteLogout, setAccess } from './access';
 
 afterEach(() => setAccess(null));
 
@@ -34,26 +34,34 @@ describe('access', () => {
     await loadAccess(reply(base));
     expect(calls).toBe(2);
   });
-  it('login vencido na porta remota (401): volta à tela de entrada', async () => {
+  it('login vencido (401): volta à tela Discord', async () => {
     const went: string[] = [];
     const expired = (() => Promise.resolve(new Response('{"error":"faça login"}', { status: 401 }))) as unknown as typeof fetch;
     await loadAccess(expired, (u) => went.push(u));
-    expect(went).toEqual(['/login']);
+    expect(went).toEqual([LOGIN_PATH]);
   });
   it('resposta torta é ignorada', async () => {
     const bad = (() => Promise.resolve(new Response('{"remote":"sim"}', { status: 200 }))) as unknown as typeof fetch;
     expect((await loadAccess(bad)).remote).toBe(false);
   });
-  it('Sair: POST JSON no logout e só então vai para /login', async () => {
+  it('Sair remoto: POST JSON no logout e só então vai para a tela Discord', async () => {
     const calls: [string, RequestInit | undefined][] = [];
     const went: string[] = [];
     const ok = ((u: string, i?: RequestInit) => (calls.push([u, i]), Promise.resolve(new Response('{"ok":true}', { status: 200 })))) as unknown as typeof fetch;
     expect(await remoteLogout(ok, (u) => went.push(u))).toBe(true);
     expect(calls[0][0]).toBe('/api/remote/logout');
     expect(calls[0][1]).toMatchObject({ method: 'POST', headers: { 'Content-Type': 'application/json' } });
-    expect(went).toEqual(['/login']);
+    expect(went).toEqual([LOGIN_PATH]);
     const down = (() => Promise.reject(new Error('rede'))) as unknown as typeof fetch;
     expect(await remoteLogout(down, (u) => went.push(u))).toBe(false);
-    expect(went).toEqual(['/login']);
+    expect(went).toEqual([LOGIN_PATH]);
+  });
+  it('Sair Discord: POST /api/discord/logout', async () => {
+    const calls: [string, RequestInit | undefined][] = [];
+    const went: string[] = [];
+    const ok = ((u: string, i?: RequestInit) => (calls.push([u, i]), Promise.resolve(new Response('{"ok":true}', { status: 200 })))) as unknown as typeof fetch;
+    expect(await discordLogout(ok, (u) => went.push(u))).toBe(true);
+    expect(calls[0][0]).toBe('/api/discord/logout');
+    expect(went).toEqual([LOGIN_PATH]);
   });
 });

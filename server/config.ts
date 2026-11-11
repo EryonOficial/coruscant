@@ -5,13 +5,26 @@ import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { discoverClaudeDirs } from './accounts/detect';
-import { envOnByDefault, isTruthy, parseEnvPort, parseHabblaudEnv } from './env';
+import { envOnByDefault, isTruthy, parseDiscordAllowedIds, parseEnvPort, parseHabblaudEnv } from './env';
 import { parseAllowedHosts } from './http/guard';
 import { parseRemoteConfig, type RemoteConfig } from './http/remote';
 import { parseGithubRepo } from './updates/checker';
 import { tr } from '../shared/i18n';
 
 export { isTruthy, parseEnvPort, parseHabblaudEnv } from './env';
+
+/** Login Discord (gate obrigatório do escritório). Sem `ready`, ninguém entra. */
+export interface DiscordAuthConfig {
+  /** client id + secret + ≥1 ID na allowlist. */
+  ready: boolean;
+  clientId: string;
+  clientSecret: string;
+  allowedIds: readonly string[];
+  /** Bearer para hooks/mod/bridge; ausente = hooks também ficam bloqueados. */
+  hookToken?: string;
+  /** Por que `ready` é false (log / página de bloqueio). */
+  reason?: string;
+}
 
 export interface ServerConfig {
   port: number;
@@ -63,6 +76,8 @@ export interface ServerConfig {
   remoteWarning?: string;
   /** Habblaud World (server/world/): conta, personagem e, nas próximas fases, o prédio no mundo. */
   world: WorldConfig;
+  /** Gate Discord (server/auth/discord.ts): sempre presente; sem `ready` o escritório fica bloqueado. */
+  discord: DiscordAuthConfig;
 }
 
 export interface WorldConfig {
@@ -222,6 +237,35 @@ export function worldSocketUrl(base: string): string {
   return `${base.replace(/^http/, 'ws').replace(/\/+$/, '')}/v1/socket`;
 }
 
+/** Discord OAuth a partir do ambiente. Sem client/secret/IDs, `ready` fica false (gate bloqueia). */
+export function parseDiscordAuthConfig(env: NodeJS.ProcessEnv): DiscordAuthConfig {
+  const clientId = env.HABBLAUD_DISCORD_CLIENT_ID?.trim() ?? '';
+  const clientSecret = env.HABBLAUD_DISCORD_CLIENT_SECRET?.trim() ?? '';
+  const allowedIds = parseDiscordAllowedIds(env.HABBLAUD_DISCORD_ALLOWED_IDS);
+  const hookToken = env.HABBLAUD_HOOK_TOKEN?.trim() || undefined;
+  if (!clientId || !clientSecret) {
+    return {
+      ready: false,
+      clientId,
+      clientSecret,
+      allowedIds,
+      hookToken,
+      reason: tr('defina HABBLAUD_DISCORD_CLIENT_ID e HABBLAUD_DISCORD_CLIENT_SECRET'),
+    };
+  }
+  if (!allowedIds.length) {
+    return {
+      ready: false,
+      clientId,
+      clientSecret,
+      allowedIds,
+      hookToken,
+      reason: tr('defina HABBLAUD_DISCORD_ALLOWED_IDS com pelo menos um ID Discord'),
+    };
+  }
+  return { ready: true, clientId, clientSecret, allowedIds, hookToken };
+}
+
 export function loadConfig(rawEnv: NodeJS.ProcessEnv = process.env, argv: string[] = process.argv): ServerConfig {
   const env = parseHabblaudEnv(rawEnv);
   const home = env.HOME || homedir();
@@ -253,5 +297,6 @@ export function loadConfig(rawEnv: NodeJS.ProcessEnv = process.env, argv: string
     remote: remote.config,
     remoteWarning: remote.warning,
     world: parseWorldConfig(env, argv),
+    discord: parseDiscordAuthConfig(env),
   };
 }
