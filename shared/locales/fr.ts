@@ -1594,7 +1594,7 @@ export const FR: Readonly<Record<string, string>> = {
   "Erro ao responder {0} {1}: {2}": "Erreur en répondant à {0} {1} : {2}",
   "A porta {0} já está em uso (defina HABBLAUD_PORT para usar outra).": "Le port {0} est déjà utilisé (définissez HABBLAUD_PORT pour en utiliser un autre).",
   "Erro no servidor HTTP: {0}": "Erreur du serveur HTTP : {0}",
-  "🏢 Habblaud {0}{1}{2} em http://{3}:{4}": "🏢 Habblaud {0}{1}{2} sur http://{3}:{4}",
+  "🏢 Coruscant {0}{1}{2} em http://{3}:{4}": "🏢 Coruscant {0}{1}{2} sur http://{3}:{4}",
   "Nenhuma pasta do Claude Code encontrada (defina HABBLAUD_CLAUDE_DIRS).": "Aucun dossier Claude Code trouvé (définissez HABBLAUD_CLAUDE_DIRS).",
   "{0} é uma pasta do Codex, não do Claude Code: fica fora das contas do Claude Code.": "{0} est un dossier Codex, pas Claude Code : il est exclu des comptes Claude Code.",
   "   Conta {0} ({1}): {2} sessão(ões) aberta(s) · uso: {3} · {4}": "   Compte {0} ({1}) : {2} session(s) ouverte(s) · utilisation : {3} · {4}",

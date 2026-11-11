@@ -488,7 +488,7 @@ if (config.remote) {
 
 server.listen(config.port, config.host, () => {
   const host = config.host === '0.0.0.0' || config.host === '::' ? 'localhost' : config.host;
-  log.info(tr('🏢 Habblaud {0}{1}{2} em http://{3}:{4}', [config.version, config.dev ? ' (dev)' : '', config.inDocker ? ' (docker)' : '', host, config.port]));
+  log.info(tr('🏢 Coruscant {0}{1}{2} em http://{3}:{4}', [config.version, config.dev ? ' (dev)' : '', config.inDocker ? ' (docker)' : '', host, config.port]));
   if (config.discord.ready) {
     log.info(tr('   Login Discord: ligado ({0} ID(s) permitidos); redirect {1}.', [config.discord.allowedIds.length, config.discord.redirectUri]));
     if (!config.discord.hookToken) log.warn(tr('   Login Discord: sem HABBLAUD_HOOK_TOKEN — hooks e o mod ficam bloqueados.'));
@@ -554,10 +554,10 @@ server.listen(config.port, config.host, () => {
   if (config.world.warning) log.warn(`   ${config.world.warning}.`);
   log.info(
     !world
-      ? tr('   Habblaud World: escondido (HABBLAUD_WORLD=0).')
+      ? tr('   Coruscant World: escondido (HABBLAUD_WORLD=0).')
       : !config.world.url
-        ? tr('   Habblaud World: desligado (HABBLAUD_WORLD_URL recusada).')
-        : tr('   Habblaud World: {0}, conta neste computador: {1}{2}.', [
+        ? tr('   Coruscant World: desligado (HABBLAUD_WORLD_URL recusada).')
+        : tr('   Coruscant World: {0}, conta neste computador: {1}{2}.', [
             config.world.defaultUrl ? tr('{0} (padrão)', [config.world.url]) : config.world.url,
             world.state(),
             config.terminal ? '' : tr(' (só leitura: a trava do terminal está desligada)'),
