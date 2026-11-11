@@ -1,10 +1,37 @@
+# Dependências e build
 node_modules/
 dist/
-.DS_Store
-*.log
+*.tsbuildinfo
+coverage/
+.vite/
+
+# Ambiente e overrides locais
 .env
+.env.*
+!.env.example
 docker-compose.override.yml
+
+# Logs e lixo de SO/editor
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
+
+# Caches locais do projeto
 scripts/assets/.cache/
 
-# Configurações locais do Claude Code e caches de geração
+# Backups dos instaladores (mod/hooks/statusline/cursor)
+*.habblaud-backup-*
+*.habblaud-tmp-*
+
+# Configurações locais de agentes / IDE (não versionar)
 .claude/
+.cursor/
+.codex/
+
+# Lockfile alternativo (o repo usa package-lock.json / npm)
+bun.lock
+bun.lockb
