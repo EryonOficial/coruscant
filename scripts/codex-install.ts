@@ -313,6 +313,7 @@ export function discoverCodexHomes(env: NodeJS.ProcessEnv, home: string): { dirs
 export interface HookConfig {
   port: number;
   permissionTimeoutS: number;
+  hookToken?: string;
 }
 
 export interface RunOptions {
@@ -391,6 +392,7 @@ export function readHookConfig(home: string): Partial<HookConfig> | undefined {
     const out: Partial<HookConfig> = {};
     if (typeof j.port === 'number') out.port = j.port;
     if (typeof j.permissionTimeoutS === 'number') out.permissionTimeoutS = j.permissionTimeoutS;
+    if (typeof j.hookToken === 'string' && j.hookToken.trim()) out.hookToken = j.hookToken.trim();
     return out;
   } catch {
     return undefined;
@@ -400,9 +402,12 @@ export function readHookConfig(home: string): Partial<HookConfig> | undefined {
 /** Grava a configuração do hook se mudou. Devolve true se gravou. */
 function writeHookConfig(home: string, cfg: HookConfig): boolean {
   const cur = readHookConfig(home);
-  if (cur?.port === cfg.port && cur.permissionTimeoutS === cfg.permissionTimeoutS) return false;
+  const token = cfg.hookToken?.trim() || undefined;
+  if (cur?.port === cfg.port && cur.permissionTimeoutS === cfg.permissionTimeoutS && (cur.hookToken || undefined) === token) return false;
   mkdirSync(join(home, '.habblaud'), { recursive: true });
-  writeFileSync(configPath(home), `${JSON.stringify(cfg, null, 2)}\n`, { mode: 0o644 });
+  const body: HookConfig = { port: cfg.port, permissionTimeoutS: cfg.permissionTimeoutS };
+  if (token) body.hookToken = token;
+  writeFileSync(configPath(home), `${JSON.stringify(body, null, 2)}\n`, { mode: 0o644 });
   return true;
 }
 
@@ -500,7 +505,11 @@ export async function run(opts: RunOptions, ctx: RunContext): Promise<number> {
   }
   const cfgFile = tildify(configPath(home), home);
   if (opts.command === 'install') {
-    const cfg: HookConfig = { port: opts.port, permissionTimeoutS: opts.waitS };
+    const cfg: HookConfig = {
+      port: opts.port,
+      permissionTimeoutS: opts.waitS,
+      ...(env.HABBLAUD_HOOK_TOKEN?.trim() ? { hookToken: env.HABBLAUD_HOOK_TOKEN.trim() } : {}),
+    };
     if (opts.dryRun) out(tr('~ configuração do hook ({0}): porta {1}, espera {2} s (simulação: nada gravado)', [cfgFile, cfg.port, cfg.permissionTimeoutS]));
     else {
       try {

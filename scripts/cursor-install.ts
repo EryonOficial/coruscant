@@ -242,21 +242,27 @@ export function configPath(home: string): string {
   return join(home, '.habblaud', CONFIG_NAME);
 }
 
-export function readHookConfig(home: string): { port?: number } | undefined {
+export function readHookConfig(home: string): { port?: number; hookToken?: string } | undefined {
   try {
     const j = rec(JSON.parse(readFileSync(configPath(home), 'utf8')));
     if (!j) return undefined;
-    return typeof j.port === 'number' ? { port: j.port } : {};
+    return {
+      ...(typeof j.port === 'number' ? { port: j.port } : {}),
+      ...(typeof j.hookToken === 'string' && j.hookToken.trim() ? { hookToken: j.hookToken.trim() } : {}),
+    };
   } catch {
     return undefined;
   }
 }
 
-function writeHookConfig(home: string, port: number): boolean {
+function writeHookConfig(home: string, port: number, hookToken?: string): boolean {
   const cur = readHookConfig(home);
-  if (cur?.port === port) return false;
+  const nextToken = hookToken?.trim() || undefined;
+  if (cur?.port === port && (cur.hookToken || undefined) === nextToken) return false;
   mkdirSync(join(home, '.habblaud'), { recursive: true });
-  writeFileSync(configPath(home), `${JSON.stringify({ port }, null, 2)}\n`, { mode: 0o644 });
+  const body: { port: number; hookToken?: string } = { port };
+  if (nextToken) body.hookToken = nextToken;
+  writeFileSync(configPath(home), `${JSON.stringify(body, null, 2)}\n`, { mode: 0o644 });
   return true;
 }
 
@@ -334,7 +340,7 @@ export async function run(opts: RunOptions, ctx: RunContext): Promise<number> {
     }
   }
   if (opts.command === 'install' && !opts.dryRun) {
-    if (writeHookConfig(home, opts.port)) out(tr('✓ configuração do hook: porta {0} ({1})', [opts.port, tildify(configPath(home), home)]));
+    if (writeHookConfig(home, opts.port, env.HABBLAUD_HOOK_TOKEN)) out(tr('✓ configuração do hook: porta {0} ({1})', [opts.port, tildify(configPath(home), home)]));
   }
   if (opts.command === 'status' || (opts.command === 'install' && changed > 0 && !opts.dryRun)) {
     const health = await (ctx.health ?? fetchHealth)(opts.port);
