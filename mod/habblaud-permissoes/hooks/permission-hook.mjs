@@ -57,9 +57,11 @@ export function parseOptions(argv, env = process.env) {
   };
   const port = Number.parseInt(arg('port') ?? env.HABBLAUD_PORT ?? '', 10);
   const timeout = Number(arg('timeout') ?? env.HABBLAUD_PERMISSION_TIMEOUT ?? '');
+  const hookToken = typeof env.HABBLAUD_HOOK_TOKEN === 'string' ? env.HABBLAUD_HOOK_TOKEN.trim() : '';
   return {
     port: Number.isInteger(port) && port > 0 && port < 65_536 ? port : DEFAULT_PORT,
     timeoutMs: (Number.isFinite(timeout) && timeout > 0 ? Math.min(MAX_TIMEOUT_S, Math.max(MIN_TIMEOUT_S, timeout)) : DEFAULT_TIMEOUT_S) * 1_000,
+    hookToken: hookToken || undefined,
   };
 }
 
@@ -174,11 +176,14 @@ function readStdin() {
 }
 
 /** Requisição ao Habblaud local; null = fora do ar, tempo esgotado ou resposta ilegível. */
-async function call(base, method, path, body, timeoutMs) {
+async function call(base, method, path, body, timeoutMs, hookToken) {
   try {
+    const headers = {};
+    if (body !== undefined) headers['Content-Type'] = 'application/json';
+    if (hookToken) headers.Authorization = `Bearer ${hookToken}`;
     const res = await fetch(`${base}${path}`, {
       method,
-      headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
+      headers,
       body: body === undefined ? undefined : JSON.stringify(body),
       signal: AbortSignal.timeout(timeoutMs),
     });
@@ -213,7 +218,7 @@ export async function run(argv = process.argv.slice(2), env = process.env, stdin
 
     const base = `http://127.0.0.1:${opts.port}`;
     const deadline = Date.now() + opts.timeoutMs;
-    const reg = await call(base, 'POST', '/api/permissions', requestBody(input, opts.timeoutMs), REGISTER_TIMEOUT_MS);
+    const reg = await call(base, 'POST', '/api/permissions', requestBody(input, opts.timeoutMs), REGISTER_TIMEOUT_MS, opts.hookToken);
     if (!reg || reg.status !== 201 || typeof reg.json?.id !== 'string') {
       debug(`sem desvio (${reg ? `${reg.status} ${JSON.stringify(reg.json ?? null)}` : 'Habblaud fora do ar'})`);
       return undefined;
@@ -226,7 +231,7 @@ export async function run(argv = process.argv.slice(2), env = process.env, stdin
         return undefined;
       }
       const waitS = Math.max(0.05, Math.min(WAIT_S, left / 1_000));
-      const r = await call(base, 'GET', `/api/permissions/${id}/wait?timeout=${waitS}`, undefined, waitS * 1_000 + 5_000);
+      const r = await call(base, 'GET', `/api/permissions/${id}/wait?timeout=${waitS}`, undefined, waitS * 1_000 + 5_000, opts.hookToken);
       if (!r || r.status !== 200) return undefined;
       const status = r.json?.status;
       if (status === 'pending') continue;

@@ -82,9 +82,12 @@ export function readConfig(env = process.env) {
   const filePort = Number(f.port);
   const envPort = Number.parseInt(env.HABBLAUD_PORT ?? '', 10);
   const wait = Number(f.permissionTimeoutS);
+  const envToken = typeof env.HABBLAUD_HOOK_TOKEN === 'string' ? env.HABBLAUD_HOOK_TOKEN.trim() : '';
+  const fileToken = typeof f.hookToken === 'string' ? f.hookToken.trim() : '';
   return {
     port: validPort(filePort) ? filePort : validPort(envPort) ? envPort : DEFAULT_PORT,
     waitMs: (Number.isFinite(wait) && wait > 0 ? Math.min(MAX_WAIT_S, Math.max(MIN_WAIT_S, wait)) : DEFAULT_WAIT_S) * 1_000,
+    hookToken: envToken || fileToken || undefined,
   };
 }
 
@@ -174,11 +177,14 @@ function readStdin() {
 }
 
 /** Requisição ao Habblaud local; null = fora do ar, tempo esgotado ou resposta ilegível. */
-async function call(base, method, path, body, timeoutMs) {
+async function call(base, method, path, body, timeoutMs, hookToken) {
   try {
+    const headers = {};
+    if (body !== undefined) headers['Content-Type'] = 'application/json';
+    if (hookToken) headers.Authorization = `Bearer ${hookToken}`;
     const res = await fetch(`${base}${path}`, {
       method,
-      headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
+      headers,
       body: body === undefined ? undefined : JSON.stringify(body),
       signal: AbortSignal.timeout(timeoutMs),
     });
@@ -216,7 +222,7 @@ export async function run(env = process.env, stdinText) {
     const codexHome = codexHomeOf(env, input);
     const account = accountOf(codexHome);
     const base = `http://127.0.0.1:${cfg.port}`;
-    const sent = await call(base, 'POST', '/api/codex/events', eventBody(input, account, codexHome), event === 'SessionEnd' ? SESSION_END_TIMEOUT_MS : EVENT_TIMEOUT_MS);
+    const sent = await call(base, 'POST', '/api/codex/events', eventBody(input, account, codexHome), event === 'SessionEnd' ? SESSION_END_TIMEOUT_MS : EVENT_TIMEOUT_MS, cfg.hookToken);
     debug(`${event}: ${sent ? `${sent.status} ${JSON.stringify(sent.json ?? null)}` : 'Habblaud fora do ar'}`);
     if (event !== 'PermissionRequest' || typeof input.tool_name !== 'string' || !input.tool_name) return undefined;
     // Sem resposta nem ao evento: o Habblaud está fora do ar (ou travado); a aprovação segue no terminal.
@@ -224,7 +230,7 @@ export async function run(env = process.env, stdinText) {
 
     // A espera conta desde o início do hook (o Codex só mostra a aprovação no terminal quando ele termina).
     const deadline = startedAt + cfg.waitMs;
-    const reg = await call(base, 'POST', '/api/permissions', permissionBody(input, account, codexHome, Math.max(0, deadline - Date.now())), REGISTER_TIMEOUT_MS);
+    const reg = await call(base, 'POST', '/api/permissions', permissionBody(input, account, codexHome, Math.max(0, deadline - Date.now())), REGISTER_TIMEOUT_MS, cfg.hookToken);
     if (!reg || reg.status !== 201 || typeof reg.json?.id !== 'string') {
       debug(`sem desvio (${reg ? `${reg.status} ${JSON.stringify(reg.json ?? null)}` : 'Habblaud fora do ar'})`);
       return undefined;
@@ -237,7 +243,7 @@ export async function run(env = process.env, stdinText) {
         return undefined;
       }
       const waitS = Math.max(0.05, Math.min(POLL_S, left / 1_000));
-      const r = await call(base, 'GET', `/api/permissions/${id}/wait?timeout=${waitS}`, undefined, waitS * 1_000 + 5_000);
+      const r = await call(base, 'GET', `/api/permissions/${id}/wait?timeout=${waitS}`, undefined, waitS * 1_000 + 5_000, cfg.hookToken);
       if (!r || r.status !== 200) return undefined;
       if (r.json?.status === 'pending') continue;
       debug(`resposta: ${JSON.stringify(r.json)}`);

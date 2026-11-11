@@ -64,8 +64,11 @@ export function readConfig(env = process.env) {
   const f = isObject(file) ? file : {};
   const filePort = Number(f.port);
   const envPort = Number.parseInt(env.HABBLAUD_PORT ?? '', 10);
+  const envToken = typeof env.HABBLAUD_HOOK_TOKEN === 'string' ? env.HABBLAUD_HOOK_TOKEN.trim() : '';
+  const fileToken = typeof f.hookToken === 'string' ? f.hookToken.trim() : '';
   return {
     port: validPort(filePort) ? filePort : validPort(envPort) ? envPort : DEFAULT_PORT,
+    hookToken: envToken || fileToken || undefined,
   };
 }
 
@@ -127,11 +130,14 @@ function readStdin() {
   });
 }
 
-async function call(base, method, path, body, timeoutMs) {
+async function call(base, method, path, body, timeoutMs, hookToken) {
   try {
+    const headers = {};
+    if (body !== undefined) headers['Content-Type'] = 'application/json';
+    if (hookToken) headers.Authorization = `Bearer ${hookToken}`;
     const res = await fetch(`${base}${path}`, {
       method,
-      headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
+      headers,
       body: body === undefined ? undefined : JSON.stringify(body),
       signal: AbortSignal.timeout(timeoutMs),
     });
@@ -181,6 +187,7 @@ export async function run(env = process.env, stdinText) {
       '/api/cursor/events',
       eventBody(input, account, cursorHome),
       event === 'sessionEnd' ? SESSION_END_TIMEOUT_MS : EVENT_TIMEOUT_MS,
+      cfg.hookToken,
     );
     debug(`${event}: ${sent ? `${sent.status} ${JSON.stringify(sent.json ?? null)}` : 'Habblaud fora do ar'}`);
   } catch (err) {

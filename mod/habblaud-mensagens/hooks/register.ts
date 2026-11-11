@@ -70,6 +70,8 @@ interface ModEnv {
   /** Sessão do app desktop do Claude (CLAUDE_CODE_ENTRYPOINT=claude-desktop): roda como SDK e só tem superfície
    *  enquanto está na tela do app, mas é interativa e recebe prompts mesmo assim. */
   desktop: boolean
+  /** Bearer HABBLAUD_HOOK_TOKEN (gate Discord). */
+  hookToken?: string
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -183,9 +185,11 @@ async function readEnv($: EngineInterface): Promise<ModEnv> {
   // No Windows, HOME só existe se alguém o definir: vale o USERPROFILE (a mesma ordem do mod habblaud).
   const home = (await $.env.get('HOME'))?.trim() || (await $.env.get('USERPROFILE'))?.trim() || undefined
   const configDir = configDirOf(await $.env.get('CLAUDE_CONFIG_DIR'), home)
+  const hookToken = (await $.env.get('HABBLAUD_HOOK_TOKEN'))?.trim() || undefined
   const next: ModEnv = {
     port: portOf(await $.env.get('HABBLAUD_PORT')),
     desktop: (await $.env.get('CLAUDE_CODE_ENTRYPOINT'))?.trim() === 'claude-desktop',
+    hookToken,
   }
   const accountId = configDir ? accountIdOf(configDir) : undefined
   if (accountId) next.accountId = accountId
@@ -207,12 +211,14 @@ async function waitAtMost<T>($: EngineInterface, promise: Promise<T>, ms: number
 }
 
 /** POST de um JSON ao Habblaud local com prazo de 2 s: a resposta, ou undefined (fora do ar, travado). Nunca lança. */
-async function postJson($: EngineInterface, port: number, path: string, body: string): Promise<HttpResponse | undefined> {
+async function postJson($: EngineInterface, port: number, path: string, body: string, hookToken?: string): Promise<HttpResponse | undefined> {
   try {
+    const headers: Record<string, string> = { 'content-type': 'application/json', accept: 'application/json' }
+    if (hookToken) headers.Authorization = `Bearer ${hookToken}`
     const request = $.http.fetch(`http://127.0.0.1:${port}${path}`, {
       method: 'POST',
       // Sem o Content-Type, o guarda do servidor recusa o POST (415).
-      headers: { 'content-type': 'application/json', accept: 'application/json' },
+      headers,
       body,
     })
     return await waitAtMost($, request, FETCH_TIMEOUT_MS)
@@ -276,7 +282,7 @@ async function round($: EngineInterface): Promise<void> {
     const surfaces = await $.session.surfaces()
     if (!surfaces.length && !e.desktop) return
     const session = await $.session.id()
-    const res = await postJson($, e.port, '/api/mod/inbox', inboxBody(session, e.accountId))
+    const res = await postJson($, e.port, '/api/mod/inbox', inboxBody(session, e.accountId), e.hookToken)
     const messages = res?.ok ? parseInbox(res.text) : undefined
     if (!messages) {
       schedule($, OFFLINE_POLL_MS)
@@ -286,7 +292,7 @@ async function round($: EngineInterface): Promise<void> {
     if (!messages.length) return
     const results = await deliver($, messages)
     // Falhou a confirmação: o servidor dá as mensagens como falhas em 30 s ("a sessão não confirmou a entrega").
-    await postJson($, e.port, '/api/mod/inbox/ack', ackBody(session, results))
+    await postJson($, e.port, '/api/mod/inbox/ack', ackBody(session, results), e.hookToken)
   } catch {
     // silêncio: a próxima rodada tenta de novo
   } finally {

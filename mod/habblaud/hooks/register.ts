@@ -80,6 +80,8 @@ interface ModEnv {
   /** Pasta do uso; ausente sem HOME (ou USERPROFILE) nem HABBLAUD_USAGE_DIR. */
   usageDir?: string
   port: number
+  /** Bearer HABBLAUD_HOOK_TOKEN (gate Discord). */
+  hookToken?: string
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -262,9 +264,11 @@ async function readEnv($: EngineInterface): Promise<ModEnv> {
   // No Windows, HOME só existe se alguém o definir: vale o USERPROFILE (a mesma ordem do servidor, HOME e depois homedir()).
   const home = (await $.env.get('HOME'))?.trim() || (await $.env.get('USERPROFILE'))?.trim() || undefined
   const configDir = configDirOf(await $.env.get('CLAUDE_CONFIG_DIR'), home)
+  const hookToken = (await $.env.get('HABBLAUD_HOOK_TOKEN'))?.trim() || undefined
   const next: ModEnv = {
     port: portOf(await $.env.get('HABBLAUD_PORT')),
     usageDir: usageDirOf(await $.env.get('HABBLAUD_USAGE_DIR'), home),
+    hookToken,
   }
   if (configDir) {
     next.configDir = configDir
@@ -293,13 +297,15 @@ async function writeUsage($: EngineInterface, rateLimits: readonly SessionRateLi
 }
 
 /** GET /api/mod/summary com prazo de 2 s; nunca lança. */
-async function askHabblaud($: EngineInterface, port: number, query: string): Promise<Asked> {
+async function askHabblaud($: EngineInterface, port: number, query: string, hookToken?: string): Promise<Asked> {
   let wait: { cancel: () => void } | undefined
   const timeout = new Promise<undefined>((resolve) => {
     wait = $.clock.after(FETCH_TIMEOUT_MS, () => resolve(undefined))
   })
   try {
-    const res = await Promise.race([$.http.fetch(`http://127.0.0.1:${port}/api/mod/summary${query}`, { headers: { accept: 'application/json' } }), timeout])
+    const headers: Record<string, string> = { accept: 'application/json' }
+    if (hookToken) headers.Authorization = `Bearer ${hookToken}`
+    const res = await Promise.race([$.http.fetch(`http://127.0.0.1:${port}/api/mod/summary${query}`, { headers }), timeout])
     if (!res) return { kind: 'offline' }
     // 404 JSON = um Habblaud de antes do mod (rota desconhecida); outro 404 qualquer = não é o Habblaud.
     if (res.status === 404 && res.text.includes('rota desconhecida')) return { kind: 'outdated' }
@@ -343,7 +349,7 @@ async function poll($: EngineInterface): Promise<void> {
     const params = new URLSearchParams()
     if (e.accountId) params.set('account', e.accountId)
     params.set('session', await $.session.id())
-    const asked = await askHabblaud($, e.port, `?${params.toString()}`)
+    const asked = await askHabblaud($, e.port, `?${params.toString()}`, e.hookToken)
     if (asked.kind !== 'ok') {
       setStatus($, undefined)
       schedule($, OFFLINE_POLL_MS)
@@ -362,7 +368,7 @@ async function poll($: EngineInterface): Promise<void> {
 async function habblaudText($: EngineInterface): Promise<string> {
   const e = await readEnv($)
   const url = `http://localhost:${e.port}`
-  const asked = await askHabblaud($, e.port, '')
+  const asked = await askHabblaud($, e.port, '', e.hookToken)
   if (asked.kind === 'outdated') return outdatedText(url)
   if (asked.kind === 'offline') return offlineText(url)
   return summaryText(asked.summary, url)
