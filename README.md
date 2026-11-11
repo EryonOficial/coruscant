@@ -722,11 +722,16 @@ since the numbers were collected shows up as **—** until new numbers arrive.
 
 ## Configuration
 
-Everything works without configuring anything. To keep options in the project folder, copy the template and edit:
+Discord login is **required**: without `HABBLAUD_DISCORD_*` the office stays locked on the sign-in screen. For the
+rest, copy the template and edit:
 
 ```bash
 cp .env.example .env
 ```
+
+In the [Discord Developer Portal](https://discord.com/developers/applications) create an app, enable OAuth2, and add
+the redirect `http://127.0.0.1:4747/auth/discord/callback` (adjust the port if you change `HABBLAUD_PORT`). Fill in
+client id, secret, the allowed ID list, and a `HABBLAUD_HOOK_TOKEN` for hooks/mod.
 
 The server (`npm start`, `npm run dev`) and Docker Compose read `.env`. Variables already set in the shell win.
 Without a `.env`, the defaults below apply:
@@ -752,6 +757,10 @@ Without a `.env`, the defaults below apply:
 | `HABBLAUD_CODEX_BIN` | `codex` from PATH (on Windows, `codex.exe`) | The Codex binary that delivers the messages (`codex queue`), in Node mode or in `npm run codex:bridge`. |
 | `HABBLAUD_CURSOR` | on | `0` turns off Cursor in the office. |
 | `HABBLAUD_CURSOR_DIRS` | automatic detection | Cursor folders, comma-separated (instead of `~/.cursor*` and `CURSOR_HOME`). |
+| `HABBLAUD_DISCORD_CLIENT_ID` | — | Discord app client ID (OAuth2). Without it the office stays locked. |
+| `HABBLAUD_DISCORD_CLIENT_SECRET` | — | Discord app client secret. |
+| `HABBLAUD_DISCORD_ALLOWED_IDS` | — | Allowed Discord user IDs (array: comma-separated). Only these can sign in. |
+| `HABBLAUD_HOOK_TOKEN` | — | Bearer for hooks/mod/bridge. Without it, integrations are blocked by the gate too. |
 | `HABBLAUD_UPDATE_CHECK` | on | `0` turns off the new-version check (a request to the repository's releases on GitHub every 6 h). |
 | `HABBLAUD_LANG` | system language (except English), otherwise `pt-BR` | Language of the texts the server builds (activities, notices, logs): `pt-BR`, `en`, `es` or `fr`. The interface follows the browser or the choice in Settings › Language. See [Languages](#languages). |
 | `HABBLAUD_ACCOUNTS` | — | JSON to customize name, letter or color, matched by the account folder name. E.g. `[{"id":".claude-conta2","name":"Trabalho","short":"T","color":"#5cc97b"}]`. |

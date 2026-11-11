@@ -2,7 +2,8 @@
 
 Node + Zod (empacotado no bundle do esbuild; a imagem Docker não leva `node_modules`). Observa as
 sessões **abertas** do Claude Code em todas as contas da máquina, mantém o modelo do escritório e
-transmite tudo via SSE. Variáveis de ambiente: schema em `server/env.ts` + `.env.example`.
+transmite tudo via SSE. Gate Discord em `server/auth/discord.ts` (env: `HABBLAUD_DISCORD_*`,
+`HABBLAUD_HOOK_TOKEN`). Schema geral: `server/env.ts` + `.env.example`.
 
 ```
 npm run dev      # servidor + Vite (middleware, HMR) em http://127.0.0.1:4747

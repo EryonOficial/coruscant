@@ -24,6 +24,11 @@ do meio (0.**3**.0).
   esbuild empacota o Zod no `dist/server` (a imagem Docker segue sem `node_modules`).
 - **Log de boot do Cursor.** Ao subir, o servidor informa contas/sessões do Cursor (ou se está desligado /
   sem pasta), no mesmo estilo do Codex.
+- **Login Discord (gate obrigatório).** A primeira tela do escritório é “Entrar com Discord”. Só os IDs em
+  `HABBLAUD_DISCORD_ALLOWED_IDS` (lista/array no `.env`) entram; sem client id/secret/IDs o Habblaud fica
+  bloqueado. UI e API exigem sessão Discord; hooks/mod usam `Authorization: Bearer` com `HABBLAUD_HOOK_TOKEN`.
+  Exceção: `GET /api/health`. Botão **Sair** na barra superior (ao lado de Configurações) pede confirmação e encerra a
+  sessão. Contexto do fork para agentes: `memory-bank/` e `.cursor/skills/habblaud-playbook/`.
 
 ## [1.0.3] - 2026-10-16
 

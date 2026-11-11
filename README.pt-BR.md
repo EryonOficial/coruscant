@@ -720,11 +720,16 @@ desde a coleta aparece como **—** até chegarem números novos.
 
 ## Configuração
 
-Tudo funciona sem configurar nada. Para guardar opções na pasta do projeto, copie o modelo e edite:
+O login Discord é **obrigatório**: sem `HABBLAUD_DISCORD_*` o escritório fica bloqueado na tela de entrada. Para o
+resto, copie o modelo e edite:
 
 ```bash
 cp .env.example .env
 ```
+
+No [Discord Developer Portal](https://discord.com/developers/applications) crie um app, ative OAuth2 e acrescente o
+redirect `http://127.0.0.1:4747/auth/discord/callback` (ajuste a porta se mudar `HABBLAUD_PORT`). Preencha client id,
+secret, a lista de IDs permitidos e um `HABBLAUD_HOOK_TOKEN` para hooks/mod.
 
 O servidor (`npm start`, `npm run dev`) e o Docker Compose leem o `.env`. Variáveis já exportadas no shell têm
 prioridade. Sem `.env`, valem os padrões abaixo:

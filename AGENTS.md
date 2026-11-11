@@ -6,6 +6,16 @@ página no navegador (`client/`) e código comum (`shared/`). Todo texto visíve
 traduções em `shared/locales/` (`npm run i18n:check`), e toda mudança visível entra em "Não lançado" no
 `CHANGELOG.md`. O resto está no `CONTRIBUTING.md`.
 
+## Contexto persistente (leia antes de mudar código)
+
+1. [`.cursor/skills/habblaud-playbook/SKILL.md`](.cursor/skills/habblaud-playbook/SKILL.md) — regras de trabalho
+2. [`memory-bank/activeContext.md`](memory-bank/activeContext.md) — foco atual
+3. Topic files sob [`memory-bank/`](memory-bank/) — Discord (`auth-discord.md`), env (`env.md`), Cursor
+   (`agents-cursor.md`), armadilhas (`pitfalls.md`)
+
+Este fork (Coruscant) exige **login Discord** (allowlist) e **Bearer `HABBLAUD_HOOK_TOKEN`** para hooks/mod. Detalhes no
+memory-bank; não invente um fluxo “sem login” sem pedido explícito.
+
 ## AVISO — Habblaud World: dados verdadeiros
 
 O código em `shared/world/` e `server/world/` decide o que o Habblaud envia ao Habblaud World. Modificá-lo (ou qualquer
