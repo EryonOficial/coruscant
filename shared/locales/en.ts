@@ -2447,6 +2447,11 @@ export const EN: Readonly<Record<string, string>> = {
   "Sair do Discord": "Sign out of Discord",
   "Sair (encerrar login Discord)": "Sign out (end Discord login)",
   "Sair ({0})": "Sign out ({0})",
+  "Sair do escritório?": "Leave the office?",
+  "Deseja realmente sair do escritório? Você vai precisar entrar de novo com Discord ({0}).":
+    "Do you really want to leave the office? You'll need to sign in again with Discord ({0}).",
+  "Deseja realmente sair do escritório? Você vai precisar entrar de novo com Discord.":
+    "Do you really want to leave the office? You'll need to sign in again with Discord.",
   "Login Discord": "Discord login",
   "Sessão Discord": "Discord session",
   "Conectado como {0}.": "Signed in as {0}.",

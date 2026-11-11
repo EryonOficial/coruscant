@@ -49,6 +49,10 @@ export class TopBar implements UiComponent {
   readonly settingsBtn: HTMLButtonElement;
   /** Encerra a sessão Discord e volta à tela de entrada. */
   private readonly logoutBtn: HTMLButtonElement;
+  private readonly logoutDialog: HTMLDialogElement;
+  private readonly logoutBody: HTMLElement;
+  private readonly logoutConfirmBtn: HTMLButtonElement;
+  private readonly logoutCancelBtn: HTMLButtonElement;
   private logoutBusy = false;
   /** Abre a janela do Habblaud World (ao lado de Configurações); a janela decide quando ele aparece. */
   readonly worldBtn: HTMLButtonElement;
@@ -114,10 +118,34 @@ export class TopBar implements UiComponent {
     this.worldBtn.hidden = true;
     this.settingsBtn = iconButton(ICONS.settings, tr('Configurações'), () => ctx.toggleSettings());
     this.settingsBtn.setAttribute('aria-haspopup', 'dialog');
-    this.logoutBtn = iconButton(ICONS.logout, tr('Sair (encerrar login Discord)'), () => void this.logout(), 'ui-btn-logout');
+    this.logoutBtn = iconButton(ICONS.logout, tr('Sair (encerrar login Discord)'), () => this.openLogoutConfirm(), 'ui-btn-logout');
+    this.logoutBtn.setAttribute('aria-haspopup', 'dialog');
     this.logoutBtn.hidden = true;
+    this.logoutBody = h('p', { class: 'ui-logout-confirm__text' });
+    this.logoutCancelBtn = h('button', { class: 'ui-btn', type: 'button', text: tr('Cancelar'), on: { click: () => this.logoutDialog.close() } }) as HTMLButtonElement;
+    this.logoutConfirmBtn = h('button', {
+      class: 'ui-btn ui-btn--danger',
+      type: 'button',
+      text: tr('Sair'),
+      on: { click: () => void this.confirmLogout() },
+    }) as HTMLButtonElement;
+    this.logoutDialog = h(
+      'dialog',
+      { class: 'ui-dialog ui-logout-confirm', attrs: { 'aria-labelledby': 'ui-logout-title' } },
+      h('div', { class: 'ui-dialog__head' }, h('h2', { text: tr('Sair do escritório?'), attrs: { id: 'ui-logout-title' } }), iconButton(ICONS.close, tr('Fechar'), () => this.logoutDialog.close(), 'ui-icon-btn--sm')),
+      h('div', { class: 'ui-logout-confirm__body' }, this.logoutBody),
+      h('div', { class: 'ui-logout-confirm__actions' }, this.logoutCancelBtn, this.logoutConfirmBtn),
+    ) as HTMLDialogElement;
+    this.logoutDialog.addEventListener('click', (e) => {
+      if (e.target === this.logoutDialog) this.logoutDialog.close();
+    });
+    this.logoutDialog.addEventListener('close', () => {
+      if (this.logoutBusy) return;
+      this.logoutConfirmBtn.disabled = false;
+      this.logoutBtn.disabled = false;
+    });
     this.spawnPanel = new SpawnPanel(ctx);
-    ctx.root.append(this.spawnPanel.el);
+    ctx.root.append(this.spawnPanel.el, this.logoutDialog);
     this.spawnBtn = iconButton(ICONS.newAgent, tr('Novo agente: começa uma sessão do Claude Code no computador'), () => this.spawnPanel.toggle(this.spawnBtn), 'ui-btn-spawn');
     this.spawnBtn.setAttribute('aria-haspopup', 'dialog');
     this.spawnBtn.hidden = true;
@@ -241,12 +269,27 @@ export class TopBar implements UiComponent {
     setHidden(this.timelapseBtn, store.mock);
   }
 
-  private async logout(): Promise<void> {
+  private openLogoutConfirm(): void {
+    if (this.logoutBusy || this.logoutDialog.open) return;
+    const user = access().discord?.username;
+    setText(
+      this.logoutBody,
+      user
+        ? tr('Deseja realmente sair do escritório? Você vai precisar entrar de novo com Discord ({0}).', [user])
+        : tr('Deseja realmente sair do escritório? Você vai precisar entrar de novo com Discord.'),
+    );
+    if (!this.logoutDialog.open) this.logoutDialog.showModal();
+    this.logoutCancelBtn.focus({ preventScroll: true });
+  }
+
+  private async confirmLogout(): Promise<void> {
     if (this.logoutBusy) return;
     this.logoutBusy = true;
+    this.logoutConfirmBtn.disabled = true;
     this.logoutBtn.disabled = true;
     if (!(await discordLogout())) {
       this.logoutBusy = false;
+      this.logoutConfirmBtn.disabled = false;
       this.logoutBtn.disabled = false;
       this.ctx.announce(tr('Não foi possível sair: sem resposta do servidor.'));
     }
