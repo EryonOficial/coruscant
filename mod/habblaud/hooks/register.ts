@@ -21,7 +21,8 @@
 //
 // Análise estática do Claude Code: cada chamada é escrita por extenso ($.noun.método), o nome do evento é
 // sempre uma string literal e `$` só é passado para funções declaradas no topo deste arquivo.
-import type { EngineInterface, Register, SessionRateLimit } from 'claude-code'
+/// <reference path="../../claude-code.d.ts" />
+import type { EngineInterface, Register, RegisterOn, SessionRateLimit } from 'claude-code'
 
 /** Porta padrão do Habblaud (a mesma do servidor, do hook de permissão e do docker-compose). */
 export const DEFAULT_PORT = 4747
@@ -303,9 +304,13 @@ async function askHabblaud($: EngineInterface, port: number, query: string, hook
     wait = $.clock.after(FETCH_TIMEOUT_MS, () => resolve(undefined))
   })
   try {
-    const headers: Record<string, string> = { accept: 'application/json' }
-    if (hookToken) headers.Authorization = `Bearer ${hookToken}`
-    const res = await Promise.race([$.http.fetch(`http://127.0.0.1:${port}/api/mod/summary${query}`, { headers }), timeout])
+    // Dois fetches com headers literais: a análise estática do Claude Code não aceita objeto montado em variável.
+    const fetchSummary = hookToken
+      ? $.http.fetch(`http://127.0.0.1:${port}/api/mod/summary${query}`, {
+          headers: { accept: 'application/json', authorization: `Bearer ${hookToken}` },
+        })
+      : $.http.fetch(`http://127.0.0.1:${port}/api/mod/summary${query}`, { headers: { accept: 'application/json' } })
+    const res = await Promise.race([fetchSummary, timeout])
     if (!res) return { kind: 'offline' }
     // 404 JSON = um Habblaud de antes do mod (rota desconhecida); outro 404 qualquer = não é o Habblaud.
     if (res.status === 404 && res.text.includes('rota desconhecida')) return { kind: 'outdated' }
@@ -374,7 +379,7 @@ async function habblaudText($: EngineInterface): Promise<string> {
   return summaryText(asked.summary, url)
 }
 
-export const register: Register = (on) => {
+export const register: Register = (on: RegisterOn) => {
   on('session.start', async ($, e, next) => {
     try {
       await $.command.register({ name: 'habblaud', description: 'Resumo do Habblaud: quantos agentes, quem trabalha e quem precisa de você' })

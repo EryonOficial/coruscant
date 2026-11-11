@@ -32,7 +32,8 @@
 //
 // Análise estática do Claude Code: cada chamada é escrita por extenso ($.noun.método), o nome do evento é
 // sempre uma string literal e `$` só é passado para funções declaradas no topo deste arquivo.
-import type { EngineInterface, HttpResponse, Register } from 'claude-code'
+/// <reference path="../../claude-code.d.ts" />
+import type { EngineInterface, HttpResponse, Register, RegisterOn } from 'claude-code'
 
 /** Porta padrão do Habblaud (a mesma do servidor, do mod e do docker-compose). */
 export const DEFAULT_PORT = 4747
@@ -213,14 +214,19 @@ async function waitAtMost<T>($: EngineInterface, promise: Promise<T>, ms: number
 /** POST de um JSON ao Habblaud local com prazo de 2 s: a resposta, ou undefined (fora do ar, travado). Nunca lança. */
 async function postJson($: EngineInterface, port: number, path: string, body: string, hookToken?: string): Promise<HttpResponse | undefined> {
   try {
-    const headers: Record<string, string> = { 'content-type': 'application/json', accept: 'application/json' }
-    if (hookToken) headers.Authorization = `Bearer ${hookToken}`
-    const request = $.http.fetch(`http://127.0.0.1:${port}${path}`, {
-      method: 'POST',
-      // Sem o Content-Type, o guarda do servidor recusa o POST (415).
-      headers,
-      body,
-    })
+    // Dois fetches com headers literais: a análise estática do Claude Code não aceita objeto montado em variável.
+    const request = hookToken
+      ? $.http.fetch(`http://127.0.0.1:${port}${path}`, {
+          method: 'POST',
+          // Sem o Content-Type, o guarda do servidor recusa o POST (415). Authorization: gate Discord (HABBLAUD_HOOK_TOKEN).
+          headers: { 'content-type': 'application/json', accept: 'application/json', authorization: `Bearer ${hookToken}` },
+          body,
+        })
+      : $.http.fetch(`http://127.0.0.1:${port}${path}`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', accept: 'application/json' },
+          body,
+        })
     return await waitAtMost($, request, FETCH_TIMEOUT_MS)
   } catch {
     return undefined
@@ -300,7 +306,7 @@ async function round($: EngineInterface): Promise<void> {
   }
 }
 
-export const register: Register = (on) => {
+export const register: Register = (on: RegisterOn) => {
   on('session.start', async ($, e, next) => {
     try {
       schedule($, POLL_MS)
